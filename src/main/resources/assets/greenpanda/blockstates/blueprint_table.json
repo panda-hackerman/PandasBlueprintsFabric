@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "has_blueprint=false": {
+      "model": "greenpanda:block/blueprint_table"
+    },
+    "has_blueprint=true": {
+      "model": "greenpanda:block/blueprint_table_filled"
+    }
+  }
+}

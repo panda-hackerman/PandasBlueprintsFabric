@@ -1,0 +1,53 @@
+{
+	"parent": "minecraft:block/cube",
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"down":  { "texture": "#down", "cullface": "down" },
+				"up":    { "texture": "#up", "cullface": "up" },
+				"north": { "texture": "#north", "cullface": "north" },
+				"south": { "texture": "#south", "cullface": "south" },
+				"west":  { "texture": "#west", "cullface": "west" },
+				"east":  { "texture": "#east", "cullface": "east" }
+			}
+		},
+		{
+			"from": [0, 13, 0],
+			"to": [16, 16, 0],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [8, 16, 0]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "north"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "north"}
+			}
+		},
+		{
+			"from": [16, 13, 0],
+			"to": [16, 16, 16],
+			"rotation": {"angle": 22.5, "axis": "z", "origin": [16, 16, 8]},
+			"faces": {
+				"east": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "east"},
+				"west": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "east"}
+			}
+		},
+		{
+			"from": [0, 13, 16],
+			"to": [16, 16, 16],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 16, 16]},
+			"faces": {
+				"north": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "south"},
+				"south": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "south"}
+			}
+		},
+		{
+			"from": [0, 13, 0],
+			"to": [0, 16, 16],
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [0, 16, 8]},
+			"faces": {
+				"east": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "west"},
+				"west": {"uv": [0, 0, 16, 3], "texture": "#tab", "cullface": "west"}
+			}
+		}
+	]
+}

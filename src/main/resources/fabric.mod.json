@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "pandas_blueprints",
+  "version": "${version}",
+  "name": "Panda's Blueprints",
+  "description": "Adds blueprints",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/pandas_blueprints/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "dev.michaud.pandas_blueprints.PandasBlueprints"
+    ]
+  },
+  "mixins": [
+    "pandas_blueprints.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

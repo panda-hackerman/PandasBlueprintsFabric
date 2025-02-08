@@ -1,0 +1,13 @@
+{
+  "parent": "greenpanda:block/template_blueprint_table",
+  "textures": {
+    "up": "greenpanda:block/blueprint_table_top_filled",
+    "down": "minecraft:block/bamboo_planks",
+    "north": "greenpanda:block/blueprint_table_front",
+    "east": "greenpanda:block/blueprint_table_side",
+    "south": "greenpanda:block/blueprint_table_side",
+    "west": "greenpanda:block/blueprint_table_front",
+    "tab": "greenpanda:block/blueprint_table_tab",
+    "particle": "greenpanda:block/blueprint_table_front"
+  }
+}
