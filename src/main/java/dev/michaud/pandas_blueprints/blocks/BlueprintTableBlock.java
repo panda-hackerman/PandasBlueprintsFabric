@@ -39,11 +39,11 @@ import xyz.nucleoid.packettweaker.PacketContext;
 public class BlueprintTableBlock extends Block implements BlockEntityProvider,
     PolymerTexturedBlock {
 
-//  private static final int MAX_BLUEPRINT_SIZE = 5;
-
   public static final MapCodec<BlueprintTableBlock> CODEC = createCodec(BlueprintTableBlock::new);
 
-  /** If this block has a blueprint or not */
+  /**
+   * If this block has a blueprint or not
+   */
   public static final BooleanProperty HAS_BLUEPRINT = BooleanProperty.of("has_blueprint");
 
   /* Block Models */
@@ -53,9 +53,9 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
       Identifier.of("greenpanda", "block/blueprint_table_filled"));
 
   public static final BlockState POLYMER_BLOCK_STATE_EMPTY = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.FULL_BLOCK, BLOCK_MODEL_EMPTY);
+      BlockModelType.TRANSPARENT_BLOCK, BLOCK_MODEL_EMPTY);
   public static final BlockState POLYMER_BLOCK_STATE_WITH_BLUEPRINT = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.FULL_BLOCK, BLOCK_MODEL_WITH_BLUEPRINT);
+      BlockModelType.TRANSPARENT_BLOCK, BLOCK_MODEL_WITH_BLUEPRINT);
 
   public BlueprintTableBlock(AbstractBlock.Settings settings) {
     super(settings);
@@ -119,7 +119,9 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
 
     // Use empty blueprint
     if (blockEntity.isEmpty() && stack.getItem() instanceof EmptyBlueprintItem) {
-      //Fill blueprint
+      if (tryFillBlueprint(player, hand, world, pos, stack)) {
+        return ActionResult.SUCCESS;
+      }
     }
 
     return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
@@ -128,39 +130,50 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
   @Override
   protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState,
       boolean moved) {
-
     if (!state.isOf(newState.getBlock())) { // Block was removed
       dropBlueprint(world, pos);
       super.onStateReplaced(state, world, pos, newState, moved);
     }
   }
 
-  protected boolean tryFillBlueprint(PlayerEntity player, Hand hand, World world, BlockPos pos, ItemStack stack) {
+  /**
+   * Generate a schematic and turn an empty blueprint into a filled blueprint with the generated id
+   *
+   * @see BlueprintTableBlockEntity#saveStructure()
+   */
+  protected boolean tryFillBlueprint(PlayerEntity player, Hand hand, World world, BlockPos pos,
+      ItemStack stack) {
 
-//    int origin_x = pos.getX();
-//    int origin_y = pos.getY();
-//    int origin_z = pos.getZ();
-//
-//    for (int x = 0; x < MAX_BLUEPRINT_SIZE; x++) {
-//      for (int y = 0; y < MAX_BLUEPRINT_SIZE; y++) {
-//        for (int z = 0; z < MAX_BLUEPRINT_SIZE; z++) {
-//
-//          BlockPos blockPos = new BlockPos(origin_x + x, origin_y + y, origin_z + z);
-//          BlockState state = world.getBlockState(blockPos);
-//
-//          if (state.isAir()) {
-//            continue;
-//          }
-//
-//        }
-//      }
-//    }
+    if (!(world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity)) {
+      return false;
+    }
+
+    final Identifier blueprintId = blockEntity.saveStructure();
+
+    if (blueprintId == null) {
+      return false;
+    }
+
+    final ItemStack filled = FilledBlueprintItem.createBlueprint(blueprintId, player);
+
+    stack.decrementUnlessCreative(1, player);
+
+    if (stack.isEmpty()) {
+      player.setStackInHand(hand, filled);
+      return true;
+    } else {
+      boolean inserted = player.getInventory().insertStack(filled.copy());
+      if (!inserted) {
+        player.dropItem(filled, false);
+      }
+    }
 
     return true;
   }
 
   /**
    * Set if this block has a blueprint
+   *
    * @see BlueprintTableBlock#HAS_BLUEPRINT
    */
   protected void setHasBlueprint(LivingEntity player, BlockState state, World world, BlockPos pos,
@@ -172,6 +185,7 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
 
   /**
    * Drop the current blueprint
+   *
    * @return If the blueprint was actually dropped
    */
   protected boolean dropBlueprint(World world, BlockPos pos) {
@@ -195,9 +209,11 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
 
   /**
    * Store the given blueprint
+   *
    * @return If the blueprint was actually stored
    */
-  protected boolean putBlueprint(LivingEntity player, World world, BlockPos pos, ItemStack blueprint) {
+  protected boolean putBlueprint(LivingEntity player, World world, BlockPos pos,
+      ItemStack blueprint) {
     if (!(world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity)) {
       return false;
     }

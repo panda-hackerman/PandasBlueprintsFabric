@@ -9,6 +9,10 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
 
+/**
+ * A blueprint without a schematic
+ * @see FilledBlueprintItem
+ */
 public class EmptyBlueprintItem extends Item implements PolymerItem {
 
   public EmptyBlueprintItem(Settings settings) {

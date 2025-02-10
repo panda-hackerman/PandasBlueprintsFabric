@@ -74,6 +74,10 @@ jar {
     }
 }
 
+loom {
+    accessWidenerPath = file("src/main/resources/pandas_blueprints.accesswidener")
+}
+
 // configure the maven publication
 publishing {
     publications {

@@ -1,15 +1,23 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
 import com.google.common.collect.ImmutableList;
+import dev.michaud.pandas_blueprints.PandasBlueprints;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.nbt.InvalidNbtException;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtHelper;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.RegistryEntryLookup;
+import net.minecraft.util.collection.IdList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
@@ -24,9 +32,12 @@ public class BlueprintSchematic {
 
   public static final int NBT_VERSION = 1;
   private final List<BlueprintBlockInfo> blockInfoList;
+  private final Map<Block, List<BlueprintBlockInfo>> blockToInfos = new HashMap<>();
+  private final Vec3i size;
 
-  protected BlueprintSchematic(List<BlueprintBlockInfo> blockInfoList) {
+  protected BlueprintSchematic(List<BlueprintBlockInfo> blockInfoList, Vec3i size) {
     this.blockInfoList = blockInfoList;
+    this.size = size;
   }
 
   /**
@@ -52,22 +63,117 @@ public class BlueprintSchematic {
       builder.add(blockInfo);
     }
 
-    return new BlueprintSchematic(builder.build());
+    return new BlueprintSchematic(builder.build(), size);
   }
 
-  public List<BlueprintBlockInfo> getBlockInfoList() {
+  public List<BlueprintBlockInfo> getAll() {
     return blockInfoList;
   }
 
-  public NbtCompound writeNbt(NbtCompound nbt) {
+  public List<BlueprintBlockInfo> getAllOf(Block block) {
+    return blockToInfos.computeIfAbsent(block,
+        b -> blockInfoList.stream().filter(info -> info.state().isOf(b)).toList());
+  }
 
-    if (blockInfoList.isEmpty()) {
-      //Empty
-      return nbt;
+
+  /**
+   * Write this schematic to nbt
+   *
+   * @param nbt The nbt to write to.
+   * @return The given {@code nbt} after writing this schematic as nbt to it
+   */
+  @Contract("_ -> param1")
+  public NbtCompound writeNbt(@NotNull NbtCompound nbt) {
+
+    final Palette palette = new Palette(); /* Updated in blocks loop */
+
+    // BUILD BLOCKS NBT
+    final NbtList blocks = new NbtList();
+
+    for (BlueprintBlockInfo blockInfo : blockInfoList) {
+
+      final NbtCompound block = new NbtCompound();
+
+      final int[] infoPos = new int[]{blockInfo.pos.getX(), blockInfo.pos.getY(), blockInfo.pos.getZ()};
+      final int infoStateId = palette.getIdOrCreate(blockInfo.state);
+      final @Nullable NbtCompound infoNbt = blockInfo.nbt;
+
+      block.putIntArray("pos", infoPos);
+      block.putInt("state", infoStateId);
+
+      if (infoNbt != null) {
+        block.put("nbt", infoNbt);
+      }
+
+      blocks.add(block);
     }
 
+    // SET PALETTE NBT
+    final NbtList paletteStates = new NbtList();
 
+    for (BlockState state : palette) {
+      paletteStates.add(NbtHelper.fromBlockState(state));
+    }
 
+    nbt.put("blocks", blocks);
+    nbt.put("palette", paletteStates);
+    nbt.putIntArray("size", new int[]{size.getX(), size.getY(), size.getZ()});
+    nbt.putInt("DataVersion", NBT_VERSION);
+
+    return nbt;
+  }
+
+  /**
+   * Create a schematic from nbt
+   * @param blockLookup Block lookup to use
+   * @param nbt Nbt to read from
+   * @return A new blueprint schematic
+   */
+  @Contract("null, _ -> fail; !null, _ -> new")
+  public static @NotNull BlueprintSchematic readNbt(RegistryEntryLookup<Block> blockLookup,
+      @NotNull NbtCompound nbt) {
+
+    final int version = nbt.getInt("DataVersion");
+
+    if (version == 0) {
+      throw new InvalidNbtException("Unknown version");
+    }
+
+    if (version > NBT_VERSION) {
+      PandasBlueprints.LOGGER.warn("Trying to deserialize ");
+    }
+
+    // Generate palette
+    final Palette palette = new Palette();
+    final NbtList paletteStates = nbt.getList("palette", NbtElement.COMPOUND_TYPE);
+
+    for (int i = 0; i < paletteStates.size(); i++) {
+      NbtCompound compound = paletteStates.getCompound(i);
+      palette.set(NbtHelper.toBlockState(blockLookup, compound), i);
+    }
+
+    // Blocks
+    final NbtList blocks = nbt.getList("blocks", NbtElement.COMPOUND_TYPE);
+
+    final ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
+
+    for (int i = 0; i < blocks.size(); i++) {
+
+      final NbtCompound nbtBlock = blocks.getCompound(i);
+      final NbtList nbtPos = nbtBlock.getList("pos", NbtElement.INT_TYPE);
+
+      final BlockPos blockPos = new BlockPos(nbtPos.getInt(0), nbtPos.getInt(1), nbtPos.getInt(0));
+      final BlockState state = palette.getState(nbtBlock.getInt("state"));
+      final NbtCompound blockNbt = nbtBlock.contains("nbt") ? nbtBlock.getCompound("nbt") : null;
+
+      builder.add(new BlueprintBlockInfo(blockPos, state, blockNbt));
+    }
+
+    // Size
+    final int[] sizeArray = nbt.getIntArray("size");
+    final Vec3i size = new Vec3i(sizeArray[0], sizeArray[1], sizeArray[2]);
+
+    return new BlueprintSchematic(builder.build(), size);
   }
 
   public record BlueprintBlockInfo(@NotNull BlockPos pos, @NotNull BlockState state,
@@ -83,23 +189,36 @@ public class BlueprintSchematic {
     }
   }
 
-  public static final class BlueprintBlockInfoList {
+  static final class Palette implements Iterable<BlockState> {
 
-    private final List<BlueprintBlockInfo> blockInfoList;
-    private final Map<Block, List<BlueprintBlockInfo>> blockToInfos = new HashMap<>();
+    private final IdList<BlockState> ids = new IdList<>();
+    private int currentIndex = 0;
 
-    BlueprintBlockInfoList(List<BlueprintBlockInfo> blockInfoList) {
-      this.blockInfoList = blockInfoList;
+    public int getIdOrCreate(BlockState state) {
+
+      int id = ids.getRawId(state);
+
+      if (id == -1) { // Doesn't exist yet
+        id = currentIndex++;
+        ids.set(state, id);
+      }
+
+      return id;
     }
 
-    public List<BlueprintBlockInfo> getAll() {
-      return blockInfoList;
+    public BlockState getState(int id) {
+      BlockState state = ids.get(id);
+      return state == null ? Blocks.AIR.getDefaultState() : state;
     }
 
-    public List<BlueprintBlockInfo> getAllOf(Block block) {
-      return blockToInfos.computeIfAbsent(block, b -> blockInfoList.stream().filter(info -> info.state().isOf(b)).toList());
+    public void set(BlockState state, int id) {
+      ids.set(state, id);
     }
 
+    @Override
+    public @NotNull Iterator<BlockState> iterator() {
+      return ids.iterator();
+    }
   }
 
 }
