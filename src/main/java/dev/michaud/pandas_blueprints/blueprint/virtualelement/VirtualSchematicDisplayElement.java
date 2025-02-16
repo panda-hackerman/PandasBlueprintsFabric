@@ -56,8 +56,6 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
 
     for (BlueprintBlockInfo block : schematic.getAll()) {
 
-      PandasBlueprints.LOGGER.info("[#{}] Creating virtual block! With {}", ++i, block);
-
       if (block.state().isAir()) {
         continue;
       }
