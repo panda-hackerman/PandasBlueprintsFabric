@@ -1,6 +1,6 @@
 package dev.michaud.pandas_blueprints.items;
 
-import dev.michaud.pandas_blueprints.components.ModDataComponentTypes;
+import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import eu.pb4.polymer.core.api.item.PolymerItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import java.util.List;
@@ -28,7 +28,7 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
   public static ItemStack createBlueprint(Identifier id, PlayerEntity author) {
 
     ItemStack itemStack = new ItemStack(ModItems.FILLED_BLUEPRINT);
-    itemStack.set(ModDataComponentTypes.BLUEPRINT_ID_COMPONENT, id);
+    itemStack.set(ModComponentTypes.BLUEPRINT_ID, id);
 
     return itemStack;
   }
@@ -42,10 +42,11 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
   public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip,
       TooltipType type) {
 
-    Identifier id = stack.get(ModDataComponentTypes.BLUEPRINT_ID_COMPONENT);
+    Identifier id = stack.get(ModComponentTypes.BLUEPRINT_ID);
 
     if (id != null) {
-      tooltip.add(Text.literal(id.toString())
+      tooltip.add(Text.literal("Id: ")
+          .append(Text.of(id))
           .formatted(Formatting.GRAY));
     } else {
       tooltip.add(Text.literal("Unknown blueprint") //TODO: Translatable

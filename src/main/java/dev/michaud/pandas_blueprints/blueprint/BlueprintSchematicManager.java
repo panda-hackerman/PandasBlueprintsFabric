@@ -1,32 +1,43 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
 import com.mojang.datafixers.DataFixer;
+import dev.michaud.pandas_blueprints.PandasBlueprints;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.block.Block;
+import net.minecraft.nbt.InvalidNbtException;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtSizeTracker;
 import net.minecraft.registry.RegistryEntryLookup;
 import net.minecraft.resource.ResourceManager;
+import net.minecraft.util.FixedBufferInputStream;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.PathUtil;
 import net.minecraft.util.WorldSavePath;
 import net.minecraft.world.level.storage.LevelStorage;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class BlueprintSchematicManager {
 
   private final DataFixer dataFixer;
   private final RegistryEntryLookup<Block> blockLookup;
-  private final Path generatedPath;
+  private final Path generatedPath; // File path to ./world/generated/
 
   private ResourceManager resourceManager;
+
+  public Map<Identifier, BlueprintSchematic> schematicMap = new ConcurrentHashMap<>();
 
   public BlueprintSchematicManager(ResourceManager resourceManager, LevelStorage.Session session,
       DataFixer dataFixer, RegistryEntryLookup<Block> blockLookup) {
@@ -40,16 +51,64 @@ public class BlueprintSchematicManager {
     this.resourceManager = resourceManager;
   }
 
-  public BlueprintSchematic loadSchematic(Identifier id) {
-    throw new NotImplementedException("Soon...");
+  /**
+   * Get a schematic with the given identifier. If it isn't already loaded, will attempt to load it
+   * from the file system.
+   *
+   * @param id The id of the schematic
+   * @return The schematic, or empty if it doesn't exist or couldn't be found
+   */
+  public Optional<BlueprintSchematic> getSchematic(@Nullable Identifier id) {
+
+    if (id == null) {
+      return Optional.empty();
+    }
+
+    if (schematicMap.containsKey(id)) {
+      return Optional.of(schematicMap.get(id));
+    }
+
+    return loadSchematic(id);
   }
 
+  /**
+   * Load a schematic from the file system
+   *
+   * @param id The id of the schematic
+   * @return The schematic, or empty if it couldn't be loaded
+   */
+  public Optional<BlueprintSchematic> loadSchematic(Identifier id) {
+
+    final Path path = getPath(id);
+
+    if (!Files.exists(path)) {
+      return Optional.empty();
+    }
+
+    try (InputStream inStream = new FixedBufferInputStream(new FileInputStream(path.toFile()))) {
+      NbtCompound readNbt = NbtIo.readCompressed(inStream, NbtSizeTracker.ofUnlimitedBytes());
+      BlueprintSchematic schematic = BlueprintSchematic.readNbt(blockLookup, readNbt);
+
+      return Optional.of(schematic);
+    } catch (IOException | InvalidNbtException e) {
+      PandasBlueprints.LOGGER.error("Couldn't open blueprint: {}.\n{}", id, e);
+    }
+
+    return Optional.empty();
+  }
+
+  /**
+   * Save a schematic to the file system
+   *
+   * @param schematic The schematic to save
+   * @return The identifier of the new schematic
+   */
   public Identifier saveSchematic(@NotNull BlueprintSchematic schematic) {
 
     Identifier identifier = Identifier.of("test", "schematic1");
     NbtCompound schematicNbt = schematic.writeNbt(new NbtCompound());
 
-    final Path path = getPath(identifier, ".nbt");
+    final Path path = getPath(identifier);
     final Path parent = path.getParent();
 
     if (parent == null) {
@@ -71,19 +130,32 @@ public class BlueprintSchematicManager {
       throw new RuntimeException("Failed to write to file..." + path);
     }
 
+//    schematicMap.put(identifier, schematic);
+
     return identifier;
   }
 
-  public Path getPath(Identifier id, String extension) {
+  /**
+   * Gets the path to the blueprint file with this id.
+   *
+   * @param id The identifier of the blueprint
+   * @return A path that points to {@code ./world/generated/<namespace>/blueprints/<path>.nbt}
+   */
+  protected Path getPath(Identifier id) {
     try {
-      Path path = generatedPath.resolve(id.getNamespace()).resolve("blueprints");
-      path = PathUtil.getResourcePath(path, id.getPath(), extension);
+      // ./world/generated/<namespace>/blueprints/
+      Path blueprintFolder = generatedPath
+          .resolve(id.getNamespace())
+          .resolve("blueprints");
 
-      if (path.startsWith(generatedPath) && PathUtil.isNormal(path) && PathUtil.isAllowedName(
-          path)) {
-        return path;
+      // Points to filename.nbt in the blueprint folder (^^^)
+      Path filePath = PathUtil.getResourcePath(blueprintFolder, id.getPath(), ".nbt").normalize();
+
+      if (filePath.startsWith(generatedPath)
+          && PathUtil.isAllowedName(filePath)) {
+        return filePath;
       } else {
-        throw new InvalidIdentifierException("Invalid path: " + path);
+        throw new InvalidIdentifierException("Invalid path: " + filePath);
       }
     } catch (InvalidPathException e) {
       throw new InvalidIdentifierException("Invalid path: " + id, e);

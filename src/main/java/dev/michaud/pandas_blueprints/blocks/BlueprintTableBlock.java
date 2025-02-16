@@ -2,6 +2,7 @@ package dev.michaud.pandas_blueprints.blocks;
 
 import com.mojang.serialization.MapCodec;
 import dev.michaud.pandas_blueprints.blocks.entity.BlueprintTableBlockEntity;
+import dev.michaud.pandas_blueprints.blocks.entity.ModBlockEntityTypes;
 import dev.michaud.pandas_blueprints.items.EmptyBlueprintItem;
 import dev.michaud.pandas_blueprints.items.FilledBlueprintItem;
 import eu.pb4.polymer.blocks.api.BlockModelType;
@@ -12,9 +13,11 @@ import eu.pb4.polymer.core.api.item.PolymerBlockItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -26,6 +29,7 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -36,15 +40,13 @@ import xyz.nucleoid.packettweaker.PacketContext;
 /**
  * Table that lets you display blueprints
  */
-public class BlueprintTableBlock extends Block implements BlockEntityProvider,
-    PolymerTexturedBlock {
-
-  public static final MapCodec<BlueprintTableBlock> CODEC = createCodec(BlueprintTableBlock::new);
+public class BlueprintTableBlock extends BlockWithEntity implements PolymerTexturedBlock {
 
   /**
    * If this block has a blueprint or not
    */
   public static final BooleanProperty HAS_BLUEPRINT = BooleanProperty.of("has_blueprint");
+  public static final MapCodec<BlueprintTableBlock> CODEC = createCodec(BlueprintTableBlock::new);
 
   /* Block Models */
   public static final PolymerBlockModel BLOCK_MODEL_EMPTY = PolymerBlockModel.of(
@@ -52,94 +54,33 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
   public static final PolymerBlockModel BLOCK_MODEL_WITH_BLUEPRINT = PolymerBlockModel.of(
       Identifier.of("greenpanda", "block/blueprint_table_filled"));
 
-  public static final BlockState POLYMER_BLOCK_STATE_EMPTY = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.TRANSPARENT_BLOCK, BLOCK_MODEL_EMPTY);
-  public static final BlockState POLYMER_BLOCK_STATE_WITH_BLUEPRINT = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.TRANSPARENT_BLOCK, BLOCK_MODEL_WITH_BLUEPRINT);
+  public static final BlockState POLYMER_BLOCK_STATE_EMPTY;
+  public static final BlockState POLYMER_BLOCK_STATE_WITH_BLUEPRINT;
+
+  static {
+
+    final BlockModelType typeEmpty = BlockModelType.FULL_BLOCK;
+    final BlockModelType typeFull;
+
+    if (PolymerBlockResourceUtils.getBlocksLeft(BlockModelType.TRANSPARENT_BLOCK) > 1) {
+      typeFull = BlockModelType.TRANSPARENT_BLOCK;
+    } else {
+      typeFull = BlockModelType.CACTUS_BLOCK;
+    }
+
+    POLYMER_BLOCK_STATE_EMPTY = PolymerBlockResourceUtils.requestBlock(typeEmpty, BLOCK_MODEL_EMPTY);
+    POLYMER_BLOCK_STATE_WITH_BLUEPRINT = PolymerBlockResourceUtils.requestBlock(typeFull, BLOCK_MODEL_WITH_BLUEPRINT);
+  }
 
   public BlueprintTableBlock(AbstractBlock.Settings settings) {
     super(settings);
     setDefaultState(getDefaultState().with(HAS_BLUEPRINT, false));
   }
 
-  @Override
-  protected MapCodec<? extends BlueprintTableBlock> getCodec() {
-    return CODEC;
-  }
-
-  @Override
-  protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-    builder.add(HAS_BLUEPRINT);
-  }
-
-  @Override
-  public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
-    if (state.get(HAS_BLUEPRINT)) {
-      return POLYMER_BLOCK_STATE_WITH_BLUEPRINT;
-    } else {
-      return POLYMER_BLOCK_STATE_EMPTY;
-    }
-  }
-
-  @Override
-  public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-    return new BlueprintTableBlockEntity(pos, state);
-  }
-
-  @Override
-  protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player,
-      BlockHitResult hit) {
-
-    if (world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity
-        && blockEntity.hasBlueprint()) {
-      if (dropBlueprint(world, pos)) {
-        setHasBlueprint(player, state, world, pos, false);
-        return ActionResult.SUCCESS;
-      }
-    }
-
-    return ActionResult.PASS;
-  }
-
-  @Override
-  protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos,
-      PlayerEntity player, Hand hand, BlockHitResult hit) {
-
-    if (!(world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity)) {
-      return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
-    }
-
-    // Put filled blueprint
-    if (blockEntity.isEmpty() && stack.getItem() instanceof FilledBlueprintItem) {
-      if (putBlueprint(player, world, pos, stack)) {
-        setHasBlueprint(player, state, world, pos, true);
-        return ActionResult.SUCCESS;
-      }
-    }
-
-    // Use empty blueprint
-    if (blockEntity.isEmpty() && stack.getItem() instanceof EmptyBlueprintItem) {
-      if (tryFillBlueprint(player, hand, world, pos, stack)) {
-        return ActionResult.SUCCESS;
-      }
-    }
-
-    return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
-  }
-
-  @Override
-  protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState,
-      boolean moved) {
-    if (!state.isOf(newState.getBlock())) { // Block was removed
-      dropBlueprint(world, pos);
-      super.onStateReplaced(state, world, pos, newState, moved);
-    }
-  }
-
   /**
    * Generate a schematic and turn an empty blueprint into a filled blueprint with the generated id
    *
-   * @see BlueprintTableBlockEntity#saveStructure()
+   * @see BlueprintTableBlockEntity#saveSchematic()
    */
   protected boolean tryFillBlueprint(PlayerEntity player, Hand hand, World world, BlockPos pos,
       ItemStack stack) {
@@ -148,7 +89,7 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
       return false;
     }
 
-    final Identifier blueprintId = blockEntity.saveStructure();
+    final Identifier blueprintId = blockEntity.saveSchematic();
 
     if (blueprintId == null) {
       return false;
@@ -222,6 +163,109 @@ public class BlueprintTableBlock extends Block implements BlockEntityProvider,
     world.playSound(null, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, SoundCategory.BLOCKS, 1, 1);
 
     return true;
+  }
+
+  @Override
+  public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
+    if (state.get(HAS_BLUEPRINT)) {
+      return POLYMER_BLOCK_STATE_WITH_BLUEPRINT;
+    } else {
+      return POLYMER_BLOCK_STATE_EMPTY;
+    }
+  }
+
+  @Override
+  protected MapCodec<? extends BlueprintTableBlock> getCodec() {
+    return CODEC;
+  }
+
+  @Override
+  protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+    builder.add(HAS_BLUEPRINT);
+  }
+
+  @Override
+  protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player,
+      BlockHitResult hit) {
+
+    if (world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity
+        && blockEntity.hasBlueprint()) {
+      if (dropBlueprint(world, pos)) {
+        setHasBlueprint(player, state, world, pos, false);
+        return ActionResult.SUCCESS;
+      }
+    }
+
+    return ActionResult.PASS;
+  }
+
+  @Override
+  protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos,
+      PlayerEntity player, Hand hand, BlockHitResult hit) {
+
+    if (!(world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity)) {
+      return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+    }
+
+    // Put filled blueprint
+    if (blockEntity.isEmpty() && stack.getItem() instanceof FilledBlueprintItem) {
+      if (putBlueprint(player, world, pos, stack)) {
+        setHasBlueprint(player, state, world, pos, true);
+        return ActionResult.SUCCESS;
+      }
+    }
+
+    // Use empty blueprint
+    if (blockEntity.isEmpty() && stack.getItem() instanceof EmptyBlueprintItem) {
+      if (tryFillBlueprint(player, hand, world, pos, stack)) {
+        return ActionResult.SUCCESS;
+      }
+    }
+
+    return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+  }
+
+  @Override
+  protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState,
+      boolean moved) {
+
+    if (state.isOf(newState.getBlock())) { // Block is the same
+      return;
+    }
+
+    if (world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity) {
+      ItemScatterer.spawn(world, pos, blockEntity);
+      world.updateComparators(pos, this);
+      blockEntity.onDestroy();
+    }
+
+    super.onStateReplaced(state, world, pos, newState, moved);
+  }
+
+  @Override
+  public @Nullable BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+    return new BlueprintTableBlockEntity(pos, state);
+  }
+
+  @Override
+  public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world,
+      BlockState state, BlockEntityType<T> type) {
+    return validateTicker(type, ModBlockEntityTypes.BLUEPRINT_TABLE,
+        BlueprintTableBlockEntity::tick);
+  }
+
+  @Override
+  protected boolean hasComparatorOutput(BlockState state) {
+    return true;
+  }
+
+  @Override
+  protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+    if (world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity) {
+      return blockEntity.hasBlueprint() ? 15 : 0;
+    } else {
+      return 0;
+    }
   }
 
   /**

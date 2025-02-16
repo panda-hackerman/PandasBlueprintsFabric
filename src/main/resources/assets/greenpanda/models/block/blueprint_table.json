@@ -1,5 +1,5 @@
 {
-  "parent": "greenpanda:block/template_blueprint_table",
+  "parent": "minecraft:block/cube",
   "textures": {
     "up": "greenpanda:block/blueprint_table_top",
     "down": "minecraft:block/bamboo_planks",
@@ -7,7 +7,6 @@
     "east": "greenpanda:block/blueprint_table_side",
     "south": "greenpanda:block/blueprint_table_side",
     "west": "greenpanda:block/blueprint_table_front",
-    "tab": "greenpanda:block/empty",
     "particle": "greenpanda:block/blueprint_table_front"
   }
 }

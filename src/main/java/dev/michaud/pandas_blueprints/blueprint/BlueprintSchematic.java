@@ -43,9 +43,9 @@ public class BlueprintSchematic {
   /**
    * Creates a new schematic with the blocks in the specified area
    */
-  @Contract(value = "_, _, _-> new", pure = true)
+  @Contract(value = "_, _, _, _-> new", pure = true)
   public static @NotNull BlueprintSchematic create(@NotNull World world,
-      @NotNull BlockPos startingPos, @NotNull Vec3i size) {
+      @NotNull BlockPos startingPos, @NotNull Vec3i size, @Nullable BlockPos tablePos) {
 
     if (size.getX() < 1 || size.getY() < 1 || size.getZ() < 1) {
       throw new IllegalArgumentException(
@@ -56,9 +56,16 @@ public class BlueprintSchematic {
     final BlockPos cornerPos = startingPos.add(size);
 
     for (BlockPos pos : BlockPos.iterate(startingPos, cornerPos)) {
+
+      if (pos.equals(tablePos)) {
+        continue;
+      }
+
+      final BlockPos offsetPos = pos.subtract(startingPos).toImmutable();
+
       final BlockState state = world.getBlockState(pos);
       final BlockEntity blockEntity = world.getBlockEntity(pos);
-      final BlueprintBlockInfo blockInfo = BlueprintBlockInfo.of(world, pos, state, blockEntity);
+      final BlueprintBlockInfo blockInfo = BlueprintBlockInfo.of(world, offsetPos, state, blockEntity);
 
       builder.add(blockInfo);
     }
@@ -75,6 +82,9 @@ public class BlueprintSchematic {
         b -> blockInfoList.stream().filter(info -> info.state().isOf(b)).toList());
   }
 
+  public Vec3i getSize() {
+    return size;
+  }
 
   /**
    * Write this schematic to nbt
@@ -129,18 +139,18 @@ public class BlueprintSchematic {
    * @param nbt Nbt to read from
    * @return A new blueprint schematic
    */
-  @Contract("null, _ -> fail; !null, _ -> new")
+  @Contract("_, _ -> new")
   public static @NotNull BlueprintSchematic readNbt(RegistryEntryLookup<Block> blockLookup,
       @NotNull NbtCompound nbt) {
 
     final int version = nbt.getInt("DataVersion");
 
     if (version == 0) {
-      throw new InvalidNbtException("Unknown version");
+      throw new InvalidNbtException("Unknown data version: " + version);
     }
 
     if (version > NBT_VERSION) {
-      PandasBlueprints.LOGGER.warn("Trying to deserialize ");
+      PandasBlueprints.LOGGER.warn("Trying to deserialize future version...");
     }
 
     // Generate palette
@@ -160,9 +170,9 @@ public class BlueprintSchematic {
     for (int i = 0; i < blocks.size(); i++) {
 
       final NbtCompound nbtBlock = blocks.getCompound(i);
-      final NbtList nbtPos = nbtBlock.getList("pos", NbtElement.INT_TYPE);
 
-      final BlockPos blockPos = new BlockPos(nbtPos.getInt(0), nbtPos.getInt(1), nbtPos.getInt(0));
+      final int[] posArr = nbtBlock.getIntArray("pos");
+      final BlockPos blockPos = new BlockPos(posArr[0], posArr[1], posArr[2]);
       final BlockState state = palette.getState(nbtBlock.getInt("state"));
       final NbtCompound blockNbt = nbtBlock.contains("nbt") ? nbtBlock.getCompound("nbt") : null;
 

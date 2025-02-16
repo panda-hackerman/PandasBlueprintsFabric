@@ -2,7 +2,7 @@ package dev.michaud.pandas_blueprints;
 
 import dev.michaud.pandas_blueprints.blocks.ModBlocks;
 import dev.michaud.pandas_blueprints.blocks.entity.ModBlockEntityTypes;
-import dev.michaud.pandas_blueprints.components.ModDataComponentTypes;
+import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.items.ModItems;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import net.fabricmc.api.ModInitializer;
@@ -20,7 +20,7 @@ public class PandasBlueprints implements ModInitializer {
 
     ModItems.registerModItems();
     ModBlocks.registerModBlocks();
-    ModDataComponentTypes.registerModComponents();
+    ModComponentTypes.registerModComponents();
     ModBlockEntityTypes.registerModBlockEntities();
 
     PolymerResourcePackUtils.addModAssets(MOD_ID);

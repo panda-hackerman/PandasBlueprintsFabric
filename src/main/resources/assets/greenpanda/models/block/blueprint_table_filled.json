@@ -1,13 +1,61 @@
 {
-  "parent": "greenpanda:block/template_blueprint_table",
-  "textures": {
-    "up": "greenpanda:block/blueprint_table_top_filled",
-    "down": "minecraft:block/bamboo_planks",
-    "north": "greenpanda:block/blueprint_table_front",
-    "east": "greenpanda:block/blueprint_table_side",
-    "south": "greenpanda:block/blueprint_table_side",
-    "west": "greenpanda:block/blueprint_table_front",
-    "tab": "greenpanda:block/blueprint_table_tab",
-    "particle": "greenpanda:block/blueprint_table_front"
-  }
+	"parent": "minecraft:block/cube",
+	"textures": {
+		"up": "greenpanda:block/blueprint_table_top_filled",
+		"down": "block/bamboo_planks",
+		"particle": "greenpanda:block/blueprint_table_front",
+		"front": "greenpanda:block/blueprint_table_front",
+		"side": "greenpanda:block/blueprint_table_side",
+		"tab": "greenpanda:block/blueprint_table_tab"
+	},
+	"elements": [
+		{
+			"from": [0, 0, 0],
+			"to": [16, 16, 16],
+			"faces": {
+				"north": {"uv": [0, 0, 16, 16], "texture": "#front", "cullface": "north"},
+				"east": {"uv": [0, 0, 16, 16], "texture": "#side", "cullface": "east"},
+				"south": {"uv": [0, 0, 16, 16], "texture": "#side", "cullface": "south"},
+				"west": {"uv": [0, 0, 16, 16], "texture": "#front", "cullface": "west"},
+				"up": {"uv": [0, 0, 16, 16], "texture": "#up", "cullface": "up"},
+				"down": {"uv": [0, 0, 16, 16], "texture": "#down", "cullface": "down"}
+			}
+		},
+		{
+			"from": [5, 13, 0],
+			"to": [11, 16, 0],
+			"rotation": {"angle": 22.5, "axis": "x", "origin": [8, 16, 0]},
+			"faces": {
+				"north": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "north"},
+				"south": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "north"}
+			}
+		},
+		{
+			"from": [16, 13, 5],
+			"to": [16, 16, 11],
+			"rotation": {"angle": 22.5, "axis": "z", "origin": [16, 16, 8]},
+			"faces": {
+				"east": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "east"},
+				"west": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "east"}
+			}
+		},
+		{
+			"from": [5, 13, 16],
+			"to": [11, 16, 16],
+			"rotation": {"angle": -22.5, "axis": "x", "origin": [8, 16, 16]},
+			"faces": {
+				"north": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "south"},
+				"south": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "south"}
+			}
+		},
+		{
+			"from": [0, 13, 5],
+			"to": [0, 16, 11],
+			"rotation": {"angle": -22.5, "axis": "z", "origin": [0, 16, 8]},
+			"faces": {
+				"east": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "west"},
+				"west": {"uv": [5, 0, 11, 3], "texture": "#tab", "cullface": "west"}
+			}
+		}
+	]
 }

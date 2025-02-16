@@ -76,7 +76,20 @@ public interface BlockEntityInventory<T extends BlockEntity> extends Inventory {
 
   @Override
   default boolean canPlayerUse(PlayerEntity player) {
-    return true;
+    return Inventory.canPlayerUse(getBlockEntity(), player);
+  }
+
+  @Override
+  default boolean canTransferTo(Inventory hopperInventory, int slot, ItemStack stack) {
+    return hopperInventory.containsAny(hopperStack -> {
+
+      if (hopperStack.isEmpty()) {
+        return true;
+      }
+
+      return ItemStack.areItemsAndComponentsEqual(stack, hopperStack)
+          && hopperStack.getCount() + stack.getCount() <= hopperInventory.getMaxCount(stack);
+    });
   }
 
   @Override

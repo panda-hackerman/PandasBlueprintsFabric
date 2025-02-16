@@ -1,5 +1,5 @@
 {
   "item.pandas_blueprints.empty_blueprint": "Empty Blueprint",
-  "item.pandas_blueprints.filled_blueprint": "Filled Blueprint",
+  "item.pandas_blueprints.filled_blueprint": "Blueprint",
   "block.pandas_blueprints.blueprint_table" : "Blueprint Table"
 }
