@@ -2,6 +2,7 @@ package dev.michaud.pandas_blueprints.blueprint;
 
 import com.google.common.collect.ImmutableList;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
+import dev.michaud.pandas_blueprints.util.CustomMathHelper;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -18,6 +19,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.RegistryEntryLookup;
 import net.minecraft.util.collection.IdList;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
@@ -41,27 +43,27 @@ public class BlueprintSchematic {
   }
 
   /**
-   * Creates a new schematic with the blocks in the specified area
+   * Creates a new schematic
+   * @param world The world
+   * @param box The bounding box to save
+   * @param tablePos The position of the blueprint table (if supplied, this position is ignored)
+   * @return A new schematic that stores the blocks in the given box
    */
-  @Contract(value = "_, _, _, _-> new", pure = true)
-  public static @NotNull BlueprintSchematic create(@NotNull World world,
-      @NotNull BlockPos startingPos, @NotNull Vec3i size, @Nullable BlockPos tablePos) {
-
-    if (size.getX() < 1 || size.getY() < 1 || size.getZ() < 1) {
-      throw new IllegalArgumentException(
-          "The bounding box must be at least 1 block in every direction");
-    }
+  @Contract(value = "_, _, _-> new", pure = true)
+  public static @NotNull BlueprintSchematic create(@NotNull World world, @NotNull BlockBox box, @Nullable BlockPos tablePos) {
 
     final ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
-    final BlockPos cornerPos = startingPos.add(size);
 
-    for (BlockPos pos : BlockPos.iterate(startingPos, cornerPos)) {
+    final BlockPos maxCorner = CustomMathHelper.getMaxPos(box);
+    final BlockPos minCorner = CustomMathHelper.getMinPos(box);
+
+    for (BlockPos pos : BlockPos.iterate(minCorner, maxCorner)) {
 
       if (pos.equals(tablePos)) {
         continue;
       }
 
-      final BlockPos offsetPos = pos.subtract(startingPos).toImmutable();
+      final BlockPos offsetPos = pos.subtract(minCorner).toImmutable();
 
       final BlockState state = world.getBlockState(pos);
       final BlockEntity blockEntity = world.getBlockEntity(pos);
@@ -70,7 +72,7 @@ public class BlueprintSchematic {
       builder.add(blockInfo);
     }
 
-    return new BlueprintSchematic(builder.build(), size);
+    return new BlueprintSchematic(builder.build(), CustomMathHelper.getSize(box));
   }
 
   public List<BlueprintBlockInfo> getAll() {

@@ -103,16 +103,17 @@ public class BlueprintSchematicManager {
    * @param schematic The schematic to save
    * @return The identifier of the new schematic
    */
-  public Identifier saveSchematic(@NotNull BlueprintSchematic schematic) {
+  public @Nullable Identifier saveSchematic(@NotNull BlueprintSchematic schematic) {
 
-    Identifier identifier = Identifier.of("test", "schematic1");
+    Identifier identifier = Identifier.of("greenpanda", "schematic_1");
     NbtCompound schematicNbt = schematic.writeNbt(new NbtCompound());
 
     final Path path = getPath(identifier);
     final Path parent = path.getParent();
 
     if (parent == null) {
-      throw new RuntimeException("Couldn't save..."); //TODO: More specific exception
+      PandasBlueprints.LOGGER.error("Couldn't save the schematic, the parent folder is null!");
+      return null;
     }
 
     // Create parent
@@ -120,18 +121,19 @@ public class BlueprintSchematicManager {
       Path create = Files.exists(parent) ? parent.toRealPath() : parent;
       Files.createDirectories(create);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to create parent directory: " + parent);
+      PandasBlueprints.LOGGER.error("Couldn't save the schematic, failed to create the parent directory!");
+      return null;
     }
 
     // Write to file
     try (OutputStream outStream = new FileOutputStream(path.toFile())) {
       NbtIo.writeCompressed(schematicNbt, outStream);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to write to file..." + path);
+      PandasBlueprints.LOGGER.error("Couldn't save the schematic, failed to write to file at {}", path);
+      return null;
     }
 
-//    schematicMap.put(identifier, schematic);
-
+    schematicMap.put(identifier, schematic);
     return identifier;
   }
 

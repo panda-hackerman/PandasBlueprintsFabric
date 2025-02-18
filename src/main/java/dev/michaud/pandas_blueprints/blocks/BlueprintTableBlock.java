@@ -26,6 +26,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -92,6 +93,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     final Identifier blueprintId = blockEntity.saveSchematic();
 
     if (blueprintId == null) {
+      player.sendMessage(Text.of("Unable to detect scaffolding!"), true); //TODO: Translatable
       return false;
     }
 
