@@ -2,7 +2,7 @@ package dev.michaud.pandas_blueprints.blueprint;
 
 import com.google.common.collect.ImmutableList;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
-import dev.michaud.pandas_blueprints.util.CustomMathHelper;
+import dev.michaud.pandas_blueprints.util.BoxDetector;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,8 +54,8 @@ public class BlueprintSchematic {
 
     final ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
 
-    final BlockPos maxCorner = CustomMathHelper.getMaxPos(box);
-    final BlockPos minCorner = CustomMathHelper.getMinPos(box);
+    final BlockPos maxCorner = BoxDetector.getMaxPos(box);
+    final BlockPos minCorner = BoxDetector.getMinPos(box);
 
     for (BlockPos pos : BlockPos.iterate(minCorner, maxCorner)) {
 
@@ -72,7 +72,7 @@ public class BlueprintSchematic {
       builder.add(blockInfo);
     }
 
-    return new BlueprintSchematic(builder.build(), CustomMathHelper.getSize(box));
+    return new BlueprintSchematic(builder.build(), BoxDetector.getSize(box));
   }
 
   public List<BlueprintBlockInfo> getAll() {

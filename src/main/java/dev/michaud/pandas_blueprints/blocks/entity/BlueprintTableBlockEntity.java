@@ -1,7 +1,5 @@
 package dev.michaud.pandas_blueprints.blocks.entity;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlueprintTableBlock;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic;
@@ -10,14 +8,12 @@ import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematicManagerHolder;
 import dev.michaud.pandas_blueprints.blueprint.virtualelement.VirtualSchematicDisplayElement;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.items.FilledBlueprintItem;
-import dev.michaud.pandas_blueprints.util.CustomMathHelper;
+import dev.michaud.pandas_blueprints.util.BoxDetector;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ScaffoldingBlock;
@@ -40,6 +36,7 @@ import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.event.GameEvent.Emitter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 /**
  * Block entity for {@link BlueprintTableBlock}
@@ -153,13 +150,15 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
       return null;
     }
 
-    final Optional<BlockBox> outline = detectOutline(world, getPos());
+    final BlockPos tablePos = getPos();
+    final Optional<BlockBox> outline = BoxDetector.detectOutlineOf(getPos(), 10,
+        (pos) -> pos == tablePos || world.getBlockState(pos).getBlock() instanceof ScaffoldingBlock);
 
     if (outline.isEmpty()) {
       return null;
     }
 
-    final BlueprintSchematic schematic = BlueprintSchematic.create(world, outline.get(), getPos());
+    final BlueprintSchematic schematic = BlueprintSchematic.create(world, outline.get(), tablePos);
 
     final BlueprintSchematicManagerHolder server = (BlueprintSchematicManagerHolder) world.getServer();
     final Optional<BlueprintSchematicManager> schematicManager =
@@ -172,210 +171,198 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
 
     return schematicManager.get().saveSchematic(schematic);
   }
-
-  protected Optional<BlockBox> detectOutline(World world, BlockPos tablePos) {
-
-    // Scan out in cardinal
-    final int scanDistance = 10;
-
-    final Map<Direction, List<BlockPos>> scaffoldingByDirection = ImmutableMap.of(
-        Direction.NORTH, scaffoldingInDirection(world, tablePos, Direction.NORTH, scanDistance),
-        Direction.EAST, scaffoldingInDirection(world, tablePos, Direction.EAST, scanDistance),
-        Direction.SOUTH, scaffoldingInDirection(world, tablePos, Direction.SOUTH, scanDistance),
-        Direction.WEST, scaffoldingInDirection(world, tablePos, Direction.WEST, scanDistance));
-
-    final List<Direction> validDirections = scaffoldingByDirection.keySet().stream()
-        .filter(dir -> !scaffoldingByDirection.get(dir).isEmpty()) //Get non-empty directions
-        .toList();
-
-    PandasBlueprints.LOGGER.info("Detected scaffolding in {} directions.", validDirections.size());
-
-    if (validDirections.size() < 2) {
-      PandasBlueprints.LOGGER.info("Less than 2 scaffolding detected");
-      return Optional.empty();
-    }
-
-    // Get base (bottom) blocks from the 4 directions
-    final List<BlockPos> baseCandidates = new ArrayList<>();
-
-    for (final Direction direction : validDirections) {
-      baseCandidates.add(scaffoldingByDirection.get(direction).get(0));
-    }
-
-    PandasBlueprints.LOGGER.info("Scaffolding at: {}", baseCandidates);
-
-    final BlockBox boxBase = switch (baseCandidates.size()) {
-      case 2 -> getValidBoxFrom(world, baseCandidates.get(0), baseCandidates.get(1));
-      case 3 -> getValidBoxFrom(world, baseCandidates.get(0), baseCandidates.get(1), baseCandidates.get(2));
-      case 4 -> getValidBoxFrom(world, baseCandidates.get(0), baseCandidates.get(1), baseCandidates.get(2), baseCandidates.get(3));
-      default -> null;
-    };
-
-    if (boxBase == null) {
-      PandasBlueprints.LOGGER.info("Scaffolding at these positions do not form a valid rectangle");
-      return Optional.empty();
-    }
-
-    // Get top blocks from the two corners
-    BlockPos northWest = new BlockPos(boxBase.getMaxX(), boxBase.getMaxY(), boxBase.getMaxZ());
-    BlockPos southEast = new BlockPos(boxBase.getMinX(), boxBase.getMinY(), boxBase.getMinZ());
-
-    final List<BlockPos> scaffoldingNW = scaffoldingInDirection(world, northWest, Direction.UP, scanDistance * 2);
-    final List<BlockPos> scaffoldingSE = scaffoldingInDirection(world, southEast, Direction.UP, scanDistance * 2);
-
-    final List<Integer> commonYList = scaffoldingNW.stream()
-        .map(BlockPos::getY)
-        .filter(i -> scaffoldingSE.stream().anyMatch(b -> b.getY() == i))
-        .sorted(Comparator.reverseOrder())
-        .toList();
-
-    PandasBlueprints.LOGGER.info("Found {} scaffolding in the NW corner and {} in the SE corner. "
-        + "They share {} of the same heights",
-        scaffoldingNW.size(), scaffoldingSE.size(), commonYList.size());
-
-    BlockBox boxTop = null;
-
-    for (final Integer y : commonYList) {
-
-      PandasBlueprints.LOGGER.info("Looking for top at y = {}", y);
-
-      BlockPos nw = new BlockPos(boxBase.getMaxX(), y, boxBase.getMaxZ());
-      BlockPos se = new BlockPos(boxBase.getMinX(), y, boxBase.getMinZ());
-
-      boxTop = getValidBoxFrom(world, nw, se);
-
-      if (boxTop != null) {
-        break;
-      }
-    }
-
-    if (boxTop == null) {
-      return Optional.empty();
-    }
-
-    return Optional.of(boxBase.encompass(boxTop));
-  }
-
-  private List<BlockPos> scaffoldingInDirection(World world, BlockPos origin, Direction direction,
-      int maxDistance) {
-
-    List<BlockPos> temp = new ArrayList<>();
-    final Vec3i vector = direction.getVector();
-
-    for (int i = 1; i <= maxDistance; i++) {
-
-      final BlockPos pos = origin.add(vector.multiply(i));
-      final BlockState state = world.getBlockState(pos);
-
-      if (state.getBlock() instanceof ScaffoldingBlock) {
-        temp.add(pos);
-      }
-    }
-
-    // Sort so that the farthest is first
-    temp.sort(Comparator.comparingDouble((BlockPos e) -> e.getSquaredDistance(origin)).reversed());
-
-    return ImmutableList.copyOf(temp);
-  }
-
-  /**
-   * @return The box containing a and b if there is a valid perimeter of scaffolding, otherwise null.
-   */
-  protected @Nullable BlockBox getValidBoxFrom(World world, BlockPos a, BlockPos b) {
-    final int y = a.getY();
-
-    final BlockBox box = new BlockBox(
-        Math.min(a.getX(), b.getX()),
-        y,
-        Math.min(a.getZ(), b.getZ()),
-        Math.max(a.getX(), b.getX()),
-        y,
-        Math.max(a.getZ(), b.getZ())
-    );
-
-    return checkScaffoldingPerimeter(world, box) ? box : null;
-  }
-
-  /**
-   * @return The box containing a, b, and c, if there is a valid perimeter of scaffolding, otherwise null.
-   */
-  protected @Nullable BlockBox getValidBoxFrom(World world, BlockPos a, BlockPos b, BlockPos c) {
-
-    final int y = a.getY();
-
-    final BlockBox box = new BlockBox(
-        CustomMathHelper.min(a.getX(), b.getX(), c.getX()),
-        y,
-        CustomMathHelper.min(a.getZ(), b.getZ(), c.getZ()),
-        CustomMathHelper.max(a.getX(), b.getX(), c.getX()),
-        y,
-        CustomMathHelper.max(a.getZ(), b.getZ(), c.getZ())
-    );
-
-    return checkScaffoldingPerimeter(world, box) ? box : null;
-  }
-
-  /**
-   * @return The box containing a, b, c, and d, if there is a valid perimeter of scaffolding.
-   */
-  protected @Nullable BlockBox getValidBoxFrom(World world, BlockPos a, BlockPos b, BlockPos c, BlockPos d) {
-
-    final int y = a.getY();
-
-    final BlockBox box = new BlockBox(
-        CustomMathHelper.min(a.getX(), b.getX(), c.getX(), d.getX()),
-        y,
-        CustomMathHelper.min(a.getZ(), b.getZ(), c.getZ(), d.getZ()),
-        CustomMathHelper.max(a.getX(), b.getX(), c.getX(), d.getX()),
-        y,
-        CustomMathHelper.max(a.getZ(), b.getZ(), c.getZ(), d.getZ())
-    );
-
-    return checkScaffoldingPerimeter(world, box) ? box : null;
-  }
-
-  protected boolean checkScaffoldingPerimeter(World world, BlockBox box) {
-
-    final int sizeX = box.getBlockCountX();
-    final int sizeZ = box.getBlockCountZ();
-
-    final BlockPos maxPos = CustomMathHelper.getMaxPos(box);
-    final BlockPos minPos = CustomMathHelper.getMinPos(box);
-
-    PandasBlueprints.LOGGER.info("Checking from bounds {} to {}", maxPos, minPos);
-
-    for (int i = 0; i < sizeX; i++) {
-      BlockPos east = minPos.east(i);
-      BlockPos west = maxPos.west(i);
-
-      if (!(world.getBlockState(east).getBlock() instanceof ScaffoldingBlock)) {
-        PandasBlueprints.LOGGER.info("[East] Block at {} is not scaffolding", east);
-        return false;
-      }
-
-      if (!(world.getBlockState(west).getBlock() instanceof ScaffoldingBlock)) {
-        PandasBlueprints.LOGGER.info("[West] Block at {} is not scaffolding", west);
-        return false;
-      }
-    }
-
-    for (int i = 0; i < sizeZ; i++) {
-      BlockPos south = minPos.south(i);
-      BlockPos north = maxPos.north(i);
-
-      if (!(world.getBlockState(south).getBlock() instanceof ScaffoldingBlock)) {
-        PandasBlueprints.LOGGER.info("[South] Block at {} is not scaffolding", south);
-        return false;
-      }
-
-      if (!(world.getBlockState(north).getBlock() instanceof ScaffoldingBlock)) {
-        PandasBlueprints.LOGGER.info("[North] Block at {} is not scaffolding", north);
-        return false;
-      }
-    }
-
-    return true;
-  }
+//
+//  @SuppressWarnings({"ConstantConditions", "deprecation"})
+//  protected Optional<BlockBox> detectOutline(World world, BlockPos tablePos) {
+//
+//    // Scan out in cardinal directions
+//    final int scanDistance = 10;
+//
+//    final Map<Direction, List<BlockPos>> scaffoldingByDirection = ImmutableMap.of(
+//        Direction.NORTH, scaffoldingInDirection(world, tablePos, Direction.NORTH, scanDistance),
+//        Direction.EAST, scaffoldingInDirection(world, tablePos, Direction.EAST, scanDistance),
+//        Direction.SOUTH, scaffoldingInDirection(world, tablePos, Direction.SOUTH, scanDistance),
+//        Direction.WEST, scaffoldingInDirection(world, tablePos, Direction.WEST, scanDistance));
+//
+//    final List<Direction> validDirections = scaffoldingByDirection.keySet().stream()
+//        .filter(dir -> !scaffoldingByDirection.get(dir).isEmpty()) //Get non-empty directions
+//        .toList();
+//
+//    PandasBlueprints.LOGGER.info("Detected scaffolding in {} directions.", validDirections.size());
+//
+//    if (validDirections.size() < 2) {
+//      PandasBlueprints.LOGGER.info("Less than 2 scaffolding detected");
+//      return Optional.empty();
+//    }
+//
+//    // Get base (bottom) blocks from the 4 directions
+//    final List<BlockPos> baseCandidates = new ArrayList<>();
+//
+//    for (final Direction direction : validDirections) {
+//      baseCandidates.add(scaffoldingByDirection.get(direction).getFirst());
+//    }
+//
+//    PandasBlueprints.LOGGER.info("Scaffolding at: {}", baseCandidates);
+//
+//    final BlockBox boxBase = getValidBoxSurrounding(world, baseCandidates);
+//
+//    if (boxBase == null) {
+//      PandasBlueprints.LOGGER.info("Scaffolding at these positions do not form a valid rectangle");
+//      return Optional.empty();
+//    }
+//
+//    // Get top blocks from the two corners
+//    BlockPos northWest = new BlockPos(boxBase.getMaxX(), boxBase.getMaxY(), boxBase.getMaxZ());
+//    BlockPos southEast = new BlockPos(boxBase.getMinX(), boxBase.getMinY(), boxBase.getMinZ());
+//
+//    final List<BlockPos> scaffoldingNW = scaffoldingInDirection(world, northWest, Direction.UP, scanDistance * 2);
+//    final List<BlockPos> scaffoldingSE = scaffoldingInDirection(world, southEast, Direction.UP, scanDistance * 2);
+//
+//    final List<Integer> commonYList = scaffoldingNW.stream()
+//        .map(BlockPos::getY)
+//        .filter(i -> scaffoldingSE.stream().anyMatch(b -> b.getY() == i))
+//        .sorted(Comparator.reverseOrder())
+//        .toList();
+//
+//    PandasBlueprints.LOGGER.info("Found {} scaffolding in the NW corner and {} in the SE corner. "
+//            + "They share {} of the same heights",
+//        scaffoldingNW.size(), scaffoldingSE.size(), commonYList.size());
+//
+//    BlockBox boxTop = null;
+//
+//    for (int y : commonYList) {
+//
+//      PandasBlueprints.LOGGER.info("Looking for top at y = {}", y);
+//
+//      BlockPos nw = new BlockPos(boxBase.getMaxX(), y, boxBase.getMaxZ());
+//      BlockPos se = new BlockPos(boxBase.getMinX(), y, boxBase.getMinZ());
+//
+//      boxTop = getValidBoxSurrounding(world, List.of(nw, se));
+//
+//      if (boxTop != null) {
+//        break;
+//      }
+//    }
+//
+//    if (boxTop == null) {
+//      return Optional.empty();
+//    }
+//
+//    return Optional.of(boxBase.encompass(boxTop));
+//  }
+//
+//  /**
+//   * Get all the scaffolding in a direction.
+//   * @param world The world
+//   * @param origin The starting position. This block is not included in the output.
+//   * @param direction The direction to search
+//   * @param maxDistance The maximum distance
+//   * @return A list with the position of all scaffolding blocks.
+//   */
+//  private @NotNull @Unmodifiable List<BlockPos> scaffoldingInDirection(World world, BlockPos origin, Direction direction,
+//      int maxDistance) {
+//
+//    List<BlockPos> out = new ArrayList<>();
+//    final Vec3i vector = direction.getVector();
+//
+//    for (int i = 1; i <= maxDistance; i++) {
+//
+//      final BlockPos pos = origin.add(vector.multiply(i));
+//      final BlockState state = world.getBlockState(pos);
+//
+//      if (state.getBlock() instanceof ScaffoldingBlock) {
+//        out.add(pos);
+//      }
+//    }
+//
+//    // Sort so that the farthest is first
+//    out.sort(Comparator.comparingDouble((BlockPos e) -> e.getSquaredDistance(origin)).reversed());
+//
+//    return ImmutableList.copyOf(out);
+//  }
+//
+//  /**
+//   * @return The box containing all the blocks in positions if there is a valid perimeter of
+//   * scaffolding, otherwise null.
+//   */
+//  protected @Nullable BlockBox getValidBoxSurrounding(World world, Iterable<BlockPos> positions) {
+//
+//    if (positions == null || !positions.iterator().hasNext()) {
+//      return null;
+//    }
+//
+//    Iterator<BlockPos> iterator = positions.iterator();
+//    BlockPos firstPos = iterator.next();
+//
+//    int y = firstPos.getY();
+//
+//    int minX = firstPos.getX();
+//    int maxX = firstPos.getX();
+//    int minZ = firstPos.getZ();
+//    int maxZ = firstPos.getZ();
+//
+//    while (iterator.hasNext()) {
+//      BlockPos pos = iterator.next();
+//
+//      int x = pos.getX();
+//      int z = pos.getZ();
+//
+//      minX = Math.min(x, minX);
+//      maxX = Math.max(x, maxX);
+//
+//      minZ = Math.min(z, minZ);
+//      maxZ = Math.max(z, maxZ);
+//    }
+//
+//    final BlockBox box = new BlockBox(minX, y, minZ, maxX, y, maxZ);
+//    return checkScaffoldingPerimeter(world, box) ? box : null;
+//  }
+//
+//  /**
+//   * @return True if the perimeter of this box contains scaffolding.
+//   */
+//  protected boolean checkScaffoldingPerimeter(World world, BlockBox box) {
+//
+//    final int sizeX = box.getBlockCountX();
+//    final int sizeZ = box.getBlockCountZ();
+//
+//    final BlockPos maxPos = BoxDetector.getMaxPos(box);
+//    final BlockPos minPos = BoxDetector.getMinPos(box);
+//
+//    PandasBlueprints.LOGGER.info("Checking from bounds {} to {}", maxPos, minPos);
+//
+//    for (int i = 0; i < sizeX; i++) {
+//      BlockPos east = minPos.east(i);
+//      BlockPos west = maxPos.west(i);
+//
+//      if (!(world.getBlockState(east).getBlock() instanceof ScaffoldingBlock)) {
+//        PandasBlueprints.LOGGER.info("[East] Block at {} is not scaffolding", east);
+//        return false;
+//      }
+//
+//      if (!(world.getBlockState(west).getBlock() instanceof ScaffoldingBlock)) {
+//        PandasBlueprints.LOGGER.info("[West] Block at {} is not scaffolding", west);
+//        return false;
+//      }
+//    }
+//
+//    for (int i = 0; i < sizeZ; i++) {
+//      BlockPos south = minPos.south(i);
+//      BlockPos north = maxPos.north(i);
+//
+//      if (!(world.getBlockState(south).getBlock() instanceof ScaffoldingBlock)) {
+//        PandasBlueprints.LOGGER.info("[South] Block at {} is not scaffolding", south);
+//        return false;
+//      }
+//
+//      if (!(world.getBlockState(north).getBlock() instanceof ScaffoldingBlock)) {
+//        PandasBlueprints.LOGGER.info("[North] Block at {} is not scaffolding", north);
+//        return false;
+//      }
+//    }
+//
+//    return true;
+//  }
 
   /**
    * Get the schematic that corresponds to the item stored currently stored
