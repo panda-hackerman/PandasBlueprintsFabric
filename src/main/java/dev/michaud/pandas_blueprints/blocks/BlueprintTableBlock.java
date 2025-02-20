@@ -20,21 +20,29 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
+import net.minecraft.state.StateManager.Builder;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.EnumProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
+import net.minecraft.world.event.GameEvent.Emitter;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
 
@@ -47,6 +55,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
    * If this block has a blueprint or not
    */
   public static final BooleanProperty HAS_BLUEPRINT = BooleanProperty.of("has_blueprint");
+  public static final EnumProperty<Direction> FACING = Properties.HORIZONTAL_FACING;
   public static final MapCodec<BlueprintTableBlock> CODEC = createCodec(BlueprintTableBlock::new);
 
   /* Block Models */
@@ -58,8 +67,8 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
   public static final BlockState POLYMER_BLOCK_STATE_EMPTY;
   public static final BlockState POLYMER_BLOCK_STATE_WITH_BLUEPRINT;
 
+  // Find an unused model
   static {
-
     final BlockModelType typeEmpty = BlockModelType.FULL_BLOCK;
     final BlockModelType typeFull;
 
@@ -73,7 +82,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     POLYMER_BLOCK_STATE_WITH_BLUEPRINT = PolymerBlockResourceUtils.requestBlock(typeFull, BLOCK_MODEL_WITH_BLUEPRINT);
   }
 
-  public BlueprintTableBlock(AbstractBlock.Settings settings) {
+  public BlueprintTableBlock(Settings settings) {
     super(settings);
     setDefaultState(getDefaultState().with(HAS_BLUEPRINT, false));
   }
@@ -93,7 +102,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     final Identifier blueprintId = blockEntity.saveSchematic();
 
     if (blueprintId == null) {
-      player.sendMessage(Text.of("Unable to detect scaffolding!"), true); //TODO: Translatable
+      player.sendMessage(Text.translatable("block.pandas_blueprints.blueprint_table.invalid_structure"), true);
       return false;
     }
 
@@ -123,7 +132,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
       boolean has_blueprint) {
     BlockState newState = state.with(HAS_BLUEPRINT, has_blueprint);
     world.setBlockState(pos, newState, Block.NOTIFY_ALL);
-    world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, GameEvent.Emitter.of(player, state));
+    world.emitGameEvent(GameEvent.BLOCK_CHANGE, pos, Emitter.of(player, state));
   }
 
   /**
@@ -182,8 +191,8 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
   }
 
   @Override
-  protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-    builder.add(HAS_BLUEPRINT);
+  protected void appendProperties(Builder<Block, BlockState> builder) {
+    builder.add(HAS_BLUEPRINT, FACING);
   }
 
   @Override
@@ -242,6 +251,16 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     }
 
     super.onStateReplaced(state, world, pos, newState, moved);
+  }
+
+  @Override
+  protected BlockState rotate(BlockState state, BlockRotation rotation) {
+    return state.with(FACING, rotation.rotate(state.get(FACING)));
+  }
+
+  @Override
+  protected BlockState mirror(BlockState state, BlockMirror mirror) {
+    return state.rotate(mirror.getRotation(state.get(FACING)));
   }
 
   @Override

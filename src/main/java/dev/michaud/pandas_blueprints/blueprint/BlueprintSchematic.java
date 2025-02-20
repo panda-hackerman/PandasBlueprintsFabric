@@ -46,11 +46,11 @@ public class BlueprintSchematic {
    * Creates a new schematic
    * @param world The world
    * @param box The bounding box to save
-   * @param tablePos The position of the blueprint table (if supplied, this position is ignored)
+   * @param tablePos The position of the blueprint table
    * @return A new schematic that stores the blocks in the given box
    */
   @Contract(value = "_, _, _-> new", pure = true)
-  public static @NotNull BlueprintSchematic create(@NotNull World world, @NotNull BlockBox box, @Nullable BlockPos tablePos) {
+  public static @NotNull BlueprintSchematic create(@NotNull World world, @NotNull BlockBox box, @NotNull BlockPos tablePos) {
 
     final ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
 
@@ -63,7 +63,7 @@ public class BlueprintSchematic {
         continue;
       }
 
-      final BlockPos offsetPos = pos.subtract(minCorner).toImmutable();
+      final BlockPos offsetPos = pos.subtract(tablePos).toImmutable();
 
       final BlockState state = world.getBlockState(pos);
       final BlockEntity blockEntity = world.getBlockEntity(pos);

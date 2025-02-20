@@ -23,8 +23,13 @@ public class ModItems {
       new Item.Settings());
   public static final Item BLUEPRINT_TABLE = register(ModBlocks.BLUEPRINT_TABLE, BlueprintTableItem::new,
       new Item.Settings());
+  public static final Item COPPER_WRENCH = register("copper_wrench", CopperWrenchItem::new,
+      new Item.Settings().repairable(Items.COPPER_INGOT).enchantable(10).maxCount(1).maxDamage(384)
+          .attributeModifiers(CopperWrenchItem.createAttributeModifiers()));
 
-  /** Register an item */
+  /**
+   * Register an item
+   */
   public static Item register(@NotNull String name, @NotNull Function<Item.Settings, Item> factory,
       @NotNull Item.Settings settings) {
 
@@ -35,7 +40,9 @@ public class ModItems {
     return Items.register(registryKey, factory, settings);
   }
 
-  /** Register a block item */
+  /**
+   * Register a block item
+   */
   public static Item register(Block block, BiFunction<Block, Settings, Item> factory,
       Item.Settings settings) {
     return Items.register(block, factory, settings);

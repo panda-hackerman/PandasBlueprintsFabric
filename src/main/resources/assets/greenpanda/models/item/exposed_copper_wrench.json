@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "greenpanda:item/exposed_copper_wrench"
+  }
+}

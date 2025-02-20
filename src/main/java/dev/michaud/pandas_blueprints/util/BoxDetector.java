@@ -1,91 +1,58 @@
 package dev.michaud.pandas_blueprints.util;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
 public class BoxDetector {
 
-  public static Optional<BlockBox> detectOutlineOf(BlockPos startPos, int scanDistance,
+  /**
+   * Attempts to find the largest 3d bounding box that has a perimeter made of valid blocks.
+   *
+   * @param startPos                The starting position. Can be in the corner or anywhere inside
+   *                                the base-level of the structure you want to detect.
+   * @param maximumSideLength       The maximum side length of the box.
+   * @param validFrameBlockFunction A function that takes a boolean and returns true if it is a
+   *                                valid block
+   * @return A bounding box, if found, otherwise empty
+   */
+  public static Optional<BlockBox> detectOutlineOf(BlockPos startPos, int maximumSideLength,
       Function<BlockPos, Boolean> validFrameBlockFunction) {
 
-    final Map<Direction, List<BlockPos>> blocksByDirection = ImmutableMap.of(
-        Direction.NORTH, getBlocksOfTypeInDirection(startPos, Direction.NORTH, scanDistance,
-            validFrameBlockFunction),
-        Direction.EAST,
-        getBlocksOfTypeInDirection(startPos, Direction.EAST, scanDistance, validFrameBlockFunction),
-        Direction.SOUTH, getBlocksOfTypeInDirection(startPos, Direction.SOUTH, scanDistance,
-            validFrameBlockFunction),
-        Direction.WEST, getBlocksOfTypeInDirection(startPos, Direction.WEST, scanDistance,
-            validFrameBlockFunction));
+    Stopwatch stopwatch = Stopwatch.createStarted();
 
-    final List<BlockPos> baseSides = blocksByDirection.values().stream()
-        .filter(blockPos -> !blockPos.isEmpty())
-        .map(List::getFirst)
-        .toList();
-
-    if (baseSides.size() < 2) {
-      return Optional.empty();
-    }
-
-    final Optional<BlockBox> baseSquare = getBoxSurrounding(baseSides);
-
-    if (baseSquare.isEmpty() || !hasValidPerimeter(baseSquare.get(), validFrameBlockFunction)) {
-      return Optional.empty();
-    }
-
-    final Optional<BlockBox> topSquare = getHighestValidTopSquare(baseSquare.get(), scanDistance * 2,
+    final Optional<BlockBox> baseSquare = findLargestValidBaseSquare(startPos, maximumSideLength,
         validFrameBlockFunction);
 
-    return topSquare.map(top -> baseSquare.get().encompass(top));
-  }
-
-  public static Optional<BlockBox> getHighestValidTopSquare(BlockBox bottomBox, int scanDistance,
-      Function<BlockPos, Boolean> validFrameBlockFunction) {
-
-    final BlockPos cornerNW = getMaxPos(bottomBox);
-    final BlockPos cornerSE = getMinPos(bottomBox);
-
-    final List<BlockPos> scaffoldingNW = getBlocksOfTypeInDirection(getMaxPos(bottomBox),
-        Direction.UP, scanDistance, validFrameBlockFunction);
-    final List<BlockPos> scaffoldingSE = getBlocksOfTypeInDirection(getMaxPos(bottomBox),
-        Direction.UP, scanDistance, validFrameBlockFunction);
-
-    final List<Integer> commonHeights = scaffoldingNW.stream()
-        .map(BlockPos::getY)
-        .filter(i -> scaffoldingSE.stream().anyMatch(b -> b.getY() == i))
-        .sorted(Comparator.reverseOrder())
-        .toList();
-
-    for (int y : commonHeights) {
-
-      PandasBlueprints.LOGGER.info("Looking for top at y = {}", y);
-
-      BlockPos nw = cornerNW.withY(y);
-      BlockPos se = cornerSE.withY(y);
-
-      Optional<BlockBox> box = getBoxSurrounding(List.of(nw, se));
-
-      if (box.isPresent() && hasValidPerimeter(box.get(), validFrameBlockFunction)) {
-        return box;
-      }
+    if (baseSquare.isEmpty()) {
+      return Optional.empty();
     }
 
-    return Optional.empty();
+    final Optional<BlockBox> topSquare = findHighestValidTopSquare(baseSquare.get(),
+        maximumSideLength, validFrameBlockFunction);
+
+    Optional<BlockBox> out = topSquare.map(top -> baseSquare.get().encompass(top));
+
+    stopwatch.stop();
+    PandasBlueprints.LOGGER.info("Detected an outline in {}ms",
+        stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+    return out;
   }
 
   /**
@@ -98,7 +65,7 @@ public class BoxDetector {
    *                                is a valid block
    * @return A list of blocks (might be empty)
    */
-  public static @NotNull @Unmodifiable List<BlockPos> getBlocksOfTypeInDirection(BlockPos origin,
+  public static @NotNull @Unmodifiable List<BlockPos> getValidBlocksInDir(BlockPos origin,
       Direction direction, int maxDistance, Function<BlockPos, Boolean> validFrameBlockFunction) {
 
     List<BlockPos> out = new ArrayList<>();
@@ -120,7 +87,7 @@ public class BoxDetector {
   /**
    * @return The minimum sized box containing all the given positions.
    */
-  protected static Optional<BlockBox> getBoxSurrounding(Iterable<BlockPos> positions) {
+  public static Optional<BlockBox> getBoxSurrounding(Iterable<BlockPos> positions) {
 
     if (positions == null || !positions.iterator().hasNext()) {
       return Optional.empty();
@@ -153,15 +120,84 @@ public class BoxDetector {
   }
 
   /**
+   * @return The minimum sized box containing all the given positions
+   */
+  public static Optional<BlockBox> getBoxSurrounding(BlockPos... positions) {
+    return getBoxSurrounding(Arrays.stream(positions).toList());
+  }
+
+  public static Optional<BlockBox> findHighestValidTopSquare(BlockBox bottomBox, int scanDistance,
+      Function<BlockPos, Boolean> validFrameBlockFunction) {
+
+    final BlockPos bottomNW = getMaxPos(bottomBox);
+    final BlockPos bottomSE = getMinPos(bottomBox);
+
+    final List<BlockPos> upScaffoldingNW = getValidBlocksInDir(getMaxPos(bottomBox),
+        Direction.UP, scanDistance, validFrameBlockFunction);
+    final List<BlockPos> upScaffoldingSE = getValidBlocksInDir(getMaxPos(bottomBox),
+        Direction.UP, scanDistance, validFrameBlockFunction);
+
+    final List<Integer> commonHeights = upScaffoldingNW.stream()
+        .map(BlockPos::getY)
+        .filter(i -> upScaffoldingSE.stream().anyMatch(b -> b.getY() == i))
+        .sorted(Comparator.reverseOrder())
+        .toList();
+
+    for (int y : commonHeights) {
+
+      final Optional<BlockBox> box = getBoxSurrounding(bottomNW.withY(y), bottomSE.withY(y));
+
+      if (box.isPresent() && hasValidPerimeter(box.get(), validFrameBlockFunction)) {
+        return box;
+      }
+    }
+
+    return Optional.empty();
+  }
+
+  public static Optional<BlockBox> findLargestValidBaseSquare(BlockPos startPos, int scanDistance,
+      Function<BlockPos, Boolean> validFrameBlockFunction) {
+
+    final List<List<BlockPos>> blocksByDirection = new ArrayList<>();
+
+    for (Direction direction : List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH,
+        Direction.WEST)) {
+      List<BlockPos> list = getValidBlocksInDir(startPos, direction, scanDistance,
+          validFrameBlockFunction);
+
+      if (!list.isEmpty()) {
+        blocksByDirection.add(list);
+      }
+    }
+
+    if (blocksByDirection.size() < 2) {
+      return Optional.empty(); // Need at least 2
+    }
+
+    List<BlockBox> possibleBoxes = Lists.cartesianProduct(blocksByDirection).stream()
+        .map(BoxDetector::getBoxSurrounding)
+        .flatMap(Optional::stream)
+        .filter(box -> isValidSize(box, scanDistance))
+        .distinct()
+        .sorted(Comparator.comparingInt(BoxDetector::getArea).reversed())
+        .toList();
+
+    PandasBlueprints.LOGGER.info("Found {} possible bounding boxes...",
+        possibleBoxes.size());
+
+    return possibleBoxes.stream()
+        .filter(box -> hasValidPerimeter(box, validFrameBlockFunction))
+        .findFirst();
+  }
+
+  /**
    * @return True if the perimeter of this box contains scaffolding.
    */
-  protected static boolean hasValidPerimeter(BlockBox box,
+  public static boolean hasValidPerimeter(BlockBox box,
       Function<BlockPos, Boolean> validFrameBlockFunction) {
 
     final BlockPos maxPos = BoxDetector.getMaxPos(box);
     final BlockPos minPos = BoxDetector.getMinPos(box);
-
-    PandasBlueprints.LOGGER.info("Checking from bounds {} to {}", maxPos, minPos);
 
     for (int i = 0; i < box.getBlockCountX(); i++) {
       BlockPos east = minPos.east(i);
@@ -184,6 +220,12 @@ public class BoxDetector {
     return true;
   }
 
+  public static boolean isValidSize(BlockBox box, int maxSideLength) {
+    return box.getBlockCountX() <= maxSideLength
+        && box.getBlockCountY() <= maxSideLength
+        && box.getBlockCountZ() <= maxSideLength;
+  }
+
   public static BlockPos getMaxPos(BlockBox box) {
     return new BlockPos(box.getMaxX(), box.getMaxY(), box.getMaxZ());
   }
@@ -194,6 +236,10 @@ public class BoxDetector {
 
   public static Vec3i getSize(BlockBox box) {
     return new Vec3i(box.getBlockCountX(), box.getBlockCountY(), box.getBlockCountZ());
+  }
+
+  public static int getArea(BlockBox box) {
+    return box.getBlockCountX() * box.getBlockCountY() * box.getBlockCountZ();
   }
 
 }

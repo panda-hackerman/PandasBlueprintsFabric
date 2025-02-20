@@ -2,19 +2,22 @@ package dev.michaud.pandas_blueprints.blueprint.virtualelement;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
-import dev.michaud.pandas_blueprints.PandasBlueprints;
+import com.google.common.collect.ImmutableBiMap.Builder;
 import dev.michaud.pandas_blueprints.blocks.entity.BlueprintTableBlockEntity;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic.BlueprintBlockInfo;
 import eu.pb4.polymer.virtualentity.api.ElementHolder;
 import eu.pb4.polymer.virtualentity.api.attachment.ManualAttachment;
 import eu.pb4.polymer.virtualentity.api.elements.BlockDisplayElement;
+import java.util.Map.Entry;
 import java.util.function.Supplier;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.decoration.Brightness;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
@@ -31,9 +34,10 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
 
   private final BiMap<BlueprintBlockInfo, BlockDisplayElement> blockDisplays;
 
+  private Direction rotation = Direction.NORTH;
+
   public VirtualSchematicDisplayElement(@NotNull BlueprintSchematic schematic,
       @NotNull BlueprintTableBlockEntity blockEntity) {
-
     this.schematic = schematic;
     this.blockEntity = blockEntity;
     this.blockDisplays = createBlockDisplays();
@@ -47,12 +51,9 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
 
     final Vec3d origin = Vec3d.of(blockEntity.getPos());
     final Vec3i size = schematic.getSize();
-    final int numberOfBlocks = size.getX() * size.getY() * size.getX();
 
-    final ImmutableBiMap.Builder<BlueprintBlockInfo, BlockDisplayElement> builder = ImmutableBiMap.builderWithExpectedSize(
-        numberOfBlocks);
-
-    int i = 0;
+    final Builder<BlueprintBlockInfo, BlockDisplayElement> builder = ImmutableBiMap
+        .builderWithExpectedSize(size.getX() * size.getY() * size.getX());
 
     for (BlueprintBlockInfo block : schematic.getAll()) {
 
@@ -93,6 +94,46 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
     return blockDisplays;
   }
 
+  public Direction getRotation() {
+    return rotation;
+  }
+
+  public void setRotation(Direction rotation) {
+
+    if (this.rotation == rotation) {
+      return;
+    }
+
+    for (Entry<BlueprintBlockInfo, BlockDisplayElement> entry : blockDisplays.entrySet()) {
+
+      final BlockDisplayElement blockDisplayElement = entry.getValue();
+      final BlueprintBlockInfo info = entry.getKey();
+
+      final int x = info.pos().getX();
+      final int y = info.pos().getY();
+      final int z = info.pos().getZ();
+
+      if (rotation == Direction.NORTH) {
+        blockDisplayElement.setOffset(new Vec3d(x, y, z));
+        return;
+      }
+
+      final double angle = switch (rotation) {
+        case EAST -> Math.toRadians(90);
+        case SOUTH -> Math.toRadians(180);
+        case WEST -> Math.toRadians(-90);
+        default -> throw new IllegalStateException("Unexpected value: " + rotation);
+      };
+
+      final int newX = (int) (x * Math.cos(angle) - z * Math.sin(angle));
+      final int newZ = (int) (z * Math.cos(angle) + x * Math.sin(angle));
+
+      blockDisplayElement.setOffset(new Vec3d(newX, y, newZ));
+    }
+
+    this.rotation = rotation;
+  }
+
   @Override
   public void destroy() {
     super.destroy();
@@ -105,6 +146,10 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
     final BlockPos origin = blockEntity.getPos();
 
     if (world == null) {
+      return;
+    }
+
+    if (getWatchingPlayers().isEmpty()) {
       return;
     }
 
