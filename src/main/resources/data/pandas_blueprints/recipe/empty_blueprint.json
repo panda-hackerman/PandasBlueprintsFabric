@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "minecraft:map",
+    "minecraft:blue_dye",
+    "minecraft:glow_ink_sac"
+  ],
+  "result": {
+    "id": "pandas_blueprints:empty_blueprint"
+  }
+}
