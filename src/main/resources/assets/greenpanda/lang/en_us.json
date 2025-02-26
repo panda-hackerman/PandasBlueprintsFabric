@@ -1,6 +1,10 @@
 {
   "item.pandas_blueprints.empty_blueprint": "Empty Blueprint",
   "item.pandas_blueprints.filled_blueprint": "Blueprint",
+  "item.pandas_blueprints.copper_wrench": "Wrench",
   "block.pandas_blueprints.blueprint_table" : "Blueprint Table",
-  "block.pandas_blueprints.blueprint_table.invalid_structure": "Invalid scaffolding structure"
+  "block.pandas_blueprints.blueprint_table.invalid_structure": "Invalid scaffolding perimeter",
+  "filled_blueprint.unknown": "Unknown Blueprint",
+  "filled_blueprint.id": "ID: \"%s\"",
+  "subtitles.item.wrench.use": "Wrench rotates"
 }

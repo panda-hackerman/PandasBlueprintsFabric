@@ -1,15 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
+  "category": "redstone",
   "pattern": [
     "@@",
     "##",
     "##"
   ],
   "key": {
-    "@": "greenpanda:empty_blueprint",
+    "@": "pandas_blueprints:empty_blueprint",
     "#": "#minecraft:planks"
   },
   "result": {
-    "id": "greenpanda:blueprint_table"
+    "id": "pandas_blueprints:blueprint_table"
   }
 }

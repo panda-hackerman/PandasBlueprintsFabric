@@ -1,8 +1,10 @@
 package dev.michaud.pandas_blueprints.blocks;
 
 import com.mojang.serialization.MapCodec;
+import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.entity.BlueprintTableBlockEntity;
 import dev.michaud.pandas_blueprints.blocks.entity.ModBlockEntityTypes;
+import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
 import dev.michaud.pandas_blueprints.items.EmptyBlueprintItem;
 import dev.michaud.pandas_blueprints.items.FilledBlueprintItem;
 import eu.pb4.polymer.blocks.api.BlockModelType;
@@ -11,7 +13,6 @@ import eu.pb4.polymer.blocks.api.PolymerBlockResourceUtils;
 import eu.pb4.polymer.blocks.api.PolymerTexturedBlock;
 import eu.pb4.polymer.core.api.item.PolymerBlockItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
-import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
@@ -20,12 +21,11 @@ import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.state.StateManager;
 import net.minecraft.state.StateManager.Builder;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
@@ -60,9 +60,9 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
 
   /* Block Models */
   public static final PolymerBlockModel BLOCK_MODEL_EMPTY = PolymerBlockModel.of(
-      Identifier.of("greenpanda", "block/blueprint_table"));
+      Identifier.of(PandasBlueprints.GREENPANDA_ID, "block/blueprint_table"));
   public static final PolymerBlockModel BLOCK_MODEL_WITH_BLUEPRINT = PolymerBlockModel.of(
-      Identifier.of("greenpanda", "block/blueprint_table_filled"));
+      Identifier.of(PandasBlueprints.GREENPANDA_ID, "block/blueprint_table_filled"));
 
   public static final BlockState POLYMER_BLOCK_STATE_EMPTY;
   public static final BlockState POLYMER_BLOCK_STATE_WITH_BLUEPRINT;
@@ -90,7 +90,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
   /**
    * Generate a schematic and turn an empty blueprint into a filled blueprint with the generated id
    *
-   * @see BlueprintTableBlockEntity#saveSchematic()
+   * @see BlueprintTableBlockEntity#saveSchematic(String)
    */
   protected boolean tryFillBlueprint(PlayerEntity player, Hand hand, World world, BlockPos pos,
       ItemStack stack) {
@@ -99,7 +99,17 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
       return false;
     }
 
-    final Identifier blueprintId = blockEntity.saveSchematic();
+    String blueprintName = "blueprint";
+    Text itemName = stack.getCustomName();
+
+    if (itemName != null) {
+      final String literal = itemName.getLiteralString();
+      if (literal != null) {
+        blueprintName = literal.toLowerCase();
+      }
+    }
+
+    final Identifier blueprintId = blockEntity.saveSchematic(blueprintName);
 
     if (blueprintId == null) {
       player.sendMessage(Text.translatable("block.pandas_blueprints.blueprint_table.invalid_structure"), true);
@@ -218,8 +228,14 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
       return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
     }
 
+    final Item item = stack.getItem();
+
+    if (item instanceof CopperWrenchItem) {
+      return ActionResult.PASS; // Allow for rotation
+    }
+
     // Put filled blueprint
-    if (blockEntity.isEmpty() && stack.getItem() instanceof FilledBlueprintItem) {
+    if (blockEntity.isEmpty() && item instanceof FilledBlueprintItem) {
       if (putBlueprint(player, world, pos, stack)) {
         setHasBlueprint(player, state, world, pos, true);
         return ActionResult.SUCCESS;
@@ -227,7 +243,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     }
 
     // Use empty blueprint
-    if (blockEntity.isEmpty() && stack.getItem() instanceof EmptyBlueprintItem) {
+    if (blockEntity.isEmpty() && item instanceof EmptyBlueprintItem) {
       if (tryFillBlueprint(player, hand, world, pos, stack)) {
         return ActionResult.SUCCESS;
       }
@@ -301,9 +317,9 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     @Override
     public @Nullable Identifier getPolymerItemModel(ItemStack stack, PacketContext context) {
       if (PolymerResourcePackUtils.hasMainPack(context)) {
-        return Identifier.of("greenpanda", "blueprint_table");
+        return Identifier.of(PandasBlueprints.GREENPANDA_ID, "blueprint_table");
       } else {
-        return Identifier.of("minecraft", "crafting_table");
+        return Identifier.ofVanilla("crafting_table");
       }
     }
   }

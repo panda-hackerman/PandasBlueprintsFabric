@@ -1,0 +1,9 @@
+{
+  "wrench_use": {
+    "subtitle": "subtitles.item.wrench.use",
+    "sounds": [
+      "greenpanda:item/wrench/rotate1",
+      "greenpanda:item/wrench/rotate2"
+    ]
+  }
+}

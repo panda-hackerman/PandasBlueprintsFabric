@@ -46,13 +46,17 @@ public class BoxDetector {
     final Optional<BlockBox> topSquare = findHighestValidTopSquare(baseSquare.get(),
         maximumSideLength, validFrameBlockFunction);
 
-    Optional<BlockBox> out = topSquare.map(top -> baseSquare.get().encompass(top));
+    if (topSquare.isEmpty()) {
+      return Optional.empty();
+    }
+
+    final BlockBox out = encompass(baseSquare.get(), topSquare.get());
 
     stopwatch.stop();
     PandasBlueprints.LOGGER.info("Detected an outline in {}ms",
         stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
-    return out;
+    return Optional.of(out);
   }
 
   /**
@@ -240,6 +244,17 @@ public class BoxDetector {
 
   public static int getArea(BlockBox box) {
     return box.getBlockCountX() * box.getBlockCountY() * box.getBlockCountZ();
+  }
+
+  public static BlockBox encompass(BlockBox base, BlockBox top) {
+    int minX = Math.min(base.getMinX(), top.getMinX()) + 1;
+    int minY = Math.min(base.getMinY(), top.getMinY());
+    int minZ = Math.min(base.getMinZ(), top.getMinZ()) + 1;
+    int maxX = Math.max(base.getMaxX(), top.getMaxX()) - 1;
+    int maxY = Math.max(base.getMaxY(), top.getMaxY());
+    int maxZ = Math.max(base.getMaxZ(), top.getMaxZ()) - 1;
+
+    return new BlockBox(minX, minY, minZ, maxX, maxY, maxZ);
   }
 
 }

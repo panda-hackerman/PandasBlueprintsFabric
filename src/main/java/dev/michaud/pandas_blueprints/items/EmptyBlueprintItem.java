@@ -1,5 +1,6 @@
 package dev.michaud.pandas_blueprints.items;
 
+import dev.michaud.pandas_blueprints.PandasBlueprints;
 import eu.pb4.polymer.core.api.item.PolymerItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import net.minecraft.item.Item;
@@ -27,9 +28,9 @@ public class EmptyBlueprintItem extends Item implements PolymerItem {
   @Override
   public @Nullable Identifier getPolymerItemModel(ItemStack stack, PacketContext context) {
     if (PolymerResourcePackUtils.hasMainPack(context)) {
-      return Identifier.of("greenpanda", "empty_blueprint");
+      return Identifier.of(PandasBlueprints.GREENPANDA_ID, "empty_blueprint");
     } else {
-      return Identifier.of("minecraft", "painting");
+      return Identifier.ofVanilla("painting");
     }
   }
 }

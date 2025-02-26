@@ -1,8 +1,10 @@
 package dev.michaud.pandas_blueprints.items;
 
+import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import eu.pb4.polymer.core.api.item.PolymerItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
+import java.text.Normalizer.Form;
 import java.util.List;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -42,14 +44,18 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
   public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip,
       TooltipType type) {
 
-    Identifier id = stack.get(ModComponentTypes.BLUEPRINT_ID);
+    final Identifier id = stack.get(ModComponentTypes.BLUEPRINT_ID);
 
     if (id != null) {
-      tooltip.add(Text.literal("Id: ")
-          .append(Text.of(id))
-          .formatted(Formatting.GRAY));
+      if (id.getNamespace().equals(PandasBlueprints.GREENPANDA_ID)) {
+        tooltip.add(Text.translatable("filled_blueprint.id", Text.of(id.getPath()))
+            .formatted(Formatting.GRAY));
+      } else {
+        tooltip.add(Text.translatable("filled_blueprint.id", Text.of(id))
+            .formatted(Formatting.GRAY));
+      }
     } else {
-      tooltip.add(Text.literal("Unknown blueprint") //TODO: Translatable
+      tooltip.add(Text.translatable("filled_blueprint.unknown")
           .formatted(Formatting.GRAY));
     }
   }
@@ -57,9 +63,9 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
   @Override
   public @Nullable Identifier getPolymerItemModel(ItemStack stack, PacketContext context) {
     if (PolymerResourcePackUtils.hasMainPack(context)) {
-      return Identifier.of("greenpanda", "filled_blueprint");
+      return Identifier.of(PandasBlueprints.GREENPANDA_ID, "filled_blueprint");
     } else {
-      return Identifier.of("minecraft", "painting");
+      return Identifier.ofVanilla("painting");
     }
   }
 }

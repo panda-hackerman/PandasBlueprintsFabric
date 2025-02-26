@@ -3,9 +3,12 @@ package dev.michaud.pandas_blueprints.items;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlueprintTableBlock.BlueprintTableItem;
 import dev.michaud.pandas_blueprints.blocks.ModBlocks;
+import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
+import dev.michaud.pandas_blueprints.items.wrench.WrenchDispenseBehavior;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.minecraft.block.Block;
+import net.minecraft.block.DispenserBlock;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
 import net.minecraft.item.Items;
@@ -49,5 +52,6 @@ public class ModItems {
   }
 
   public static void registerModItems() {
+    DispenserBlock.registerBehavior(COPPER_WRENCH, new WrenchDispenseBehavior());
   }
 }

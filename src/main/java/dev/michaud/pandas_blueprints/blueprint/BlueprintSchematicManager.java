@@ -2,6 +2,7 @@ package dev.michaud.pandas_blueprints.blueprint;
 
 import com.mojang.datafixers.DataFixer;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
+import dev.michaud.pandas_blueprints.util.BlueprintPathUtil;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,7 +26,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.PathUtil;
 import net.minecraft.util.WorldSavePath;
-import net.minecraft.world.level.storage.LevelStorage;
+import net.minecraft.world.level.storage.LevelStorage.Session;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +40,7 @@ public class BlueprintSchematicManager {
 
   public Map<Identifier, BlueprintSchematic> schematicMap = new ConcurrentHashMap<>();
 
-  public BlueprintSchematicManager(ResourceManager resourceManager, LevelStorage.Session session,
+  public BlueprintSchematicManager(ResourceManager resourceManager, Session session,
       DataFixer dataFixer, RegistryEntryLookup<Block> blockLookup) {
     this.resourceManager = resourceManager;
     this.dataFixer = dataFixer;
@@ -103,13 +104,29 @@ public class BlueprintSchematicManager {
    * @param schematic The schematic to save
    * @return The identifier of the new schematic
    */
-  public @Nullable Identifier saveSchematic(@NotNull BlueprintSchematic schematic) {
+  public @Nullable Identifier saveSchematic(@NotNull BlueprintSchematic schematic, @NotNull String name) {
 
-    Identifier identifier = Identifier.of("greenpanda", "schematic_1");
-    NbtCompound schematicNbt = schematic.writeNbt(new NbtCompound());
+    final String namespace = PandasBlueprints.GREENPANDA_ID;
 
-    final Path path = getPath(identifier);
-    final Path parent = path.getParent();
+    final NbtCompound schematicNbt = schematic.writeNbt(new NbtCompound());
+
+    final Identifier identifier;
+    final Path path;
+    final Path parent;
+
+    try {
+      final String uniqueName = BlueprintPathUtil.getNextUniqueName(getParent(namespace), name, ".nbt");
+
+      identifier = Identifier.of(namespace, uniqueName);
+      path = getPath(identifier);
+      parent = path.getParent();
+    } catch (IOException e) {
+      PandasBlueprints.LOGGER.error("Ran into an IO problem while trying to save schematic: ", e);
+      return null;
+    } catch (InvalidIdentifierException e) {
+      PandasBlueprints.LOGGER.error("Invalid identifier trying to save schematic: ", e);
+      return null;
+    }
 
     if (parent == null) {
       PandasBlueprints.LOGGER.error("Couldn't save the schematic, the parent folder is null!");
@@ -138,12 +155,38 @@ public class BlueprintSchematicManager {
   }
 
   /**
+   * Gets the path to the blueprint folder of this namespace
+   *
+   * @param namespace The namespace of the blueprint folder
+   * @return A path that points to {@code ./world/generated/<namespace>/blueprints/}
+   *
+   * @see BlueprintSchematicManager#getPath(Identifier)
+   */
+  protected Path getParent(@NotNull String namespace) {
+    try {
+      Path blueprintFolder = generatedPath
+          .resolve(namespace)
+          .resolve("blueprints");
+
+      if (blueprintFolder.startsWith(generatedPath)
+          && PathUtil.isAllowedName(blueprintFolder)) {
+        return blueprintFolder;
+      } else {
+        throw new InvalidIdentifierException("Invalid path: " + blueprintFolder);
+      }
+    } catch (InvalidPathException e) {
+      throw new InvalidIdentifierException("Invalid path with namespace" + namespace);
+    }
+  }
+
+  /**
    * Gets the path to the blueprint file with this id.
    *
    * @param id The identifier of the blueprint
    * @return A path that points to {@code ./world/generated/<namespace>/blueprints/<path>.nbt}
+   * @see BlueprintSchematicManager#getParent(String)
    */
-  protected Path getPath(Identifier id) {
+  protected Path getPath(@NotNull Identifier id) {
     try {
       // ./world/generated/<namespace>/blueprints/
       Path blueprintFolder = generatedPath

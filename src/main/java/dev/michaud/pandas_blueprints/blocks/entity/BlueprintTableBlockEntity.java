@@ -19,7 +19,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockBox;
@@ -27,7 +26,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.event.GameEvent.Emitter;
@@ -70,7 +68,7 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
     final Direction facingState = state.get(BlueprintTableBlock.FACING);
 
     if (blockEntity.schematicDisplayElement != null) {
-      blockEntity.schematicDisplayElement.setRotation(facingState);
+      blockEntity.schematicDisplayElement.setFacing(facingState);
     }
 
     // Update blueprint id
@@ -94,31 +92,26 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
   /** Show blueprint to applicable players */
   public void showBlueprintToPlayers() {
 
-    ServerWorld world = (ServerWorld) getWorld();
+    final ServerWorld world = (ServerWorld) getWorld();
 
     if (schematicDisplayElement == null || world == null) {
       return;
     }
 
-    final Vec3i schematicSize = schematicDisplayElement.getSchematic().getSize();
-    final BlockPos blockPos = getPos();
-    final BlockPos schematicCorner = getPos().add(schematicSize);
-
-    final Box closeToTableBox = Box.of(Vec3d.of(blockPos), 10, 10, 10);
-    final Box closeToHologramBox = Box.enclosing(blockPos, schematicCorner).expand(5);
+    final Box closeToTableBox = Box.of(Vec3d.of(getPos()), 10, 10, 10);
+    final Box closeToHologramBox = Box.from(schematicDisplayElement.getBoundingBox()).expand(5);
 
     for (ServerPlayerEntity player : world.getPlayers()) {
 
-      Vec3d pos = player.getPos();
-      boolean shouldShow = closeToHologramBox.contains(pos) || closeToTableBox.contains(pos);
+      Box hitbox = player.getBoundingBox();
 
-      if (shouldShow) {
+      if (closeToHologramBox.intersects(hitbox)
+          || closeToTableBox.intersects(hitbox)) {
         schematicDisplayElement.startWatching(player);
       } else {
         schematicDisplayElement.stopWatching(player);
       }
     }
-
   }
 
   public void onDestroy() {
@@ -149,7 +142,7 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
    *
    * @return The ID of the saves schematic
    */
-  public @Nullable Identifier saveSchematic() {
+  public @Nullable Identifier saveSchematic(@NotNull String name) {
     if (world == null) {
       return null;
     }
@@ -174,7 +167,7 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
       return null;
     }
 
-    return schematicManager.get().saveSchematic(schematic);
+    return schematicManager.get().saveSchematic(schematic, name);
   }
 
   /**
