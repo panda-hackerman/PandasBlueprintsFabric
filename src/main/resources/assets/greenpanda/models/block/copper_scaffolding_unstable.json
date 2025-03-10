@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/scaffolding_unstable",
+  "textures": {
+    "top": "greenpanda:block/copper_scaffolding_top",
+    "side": "greenpanda:block/copper_scaffolding_side",
+    "bottom": "greenpanda:block/copper_scaffolding_bottom",
+    "particle": "greenpanda:block/copper_scaffolding_top"
+  }
+}
