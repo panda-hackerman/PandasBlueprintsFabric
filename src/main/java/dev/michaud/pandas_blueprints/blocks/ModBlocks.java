@@ -12,6 +12,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 
+@SuppressWarnings("unused")
 public class ModBlocks {
 
   public static final Block BLUEPRINT_TABLE = register("blueprint_table", BlueprintTableBlock::new,
@@ -21,6 +22,16 @@ public class ModBlocks {
           .strength(2.5F)
           .sounds(BlockSoundGroup.BAMBOO_WOOD)
           .burnable());
+  public static final Block COPPER_SCAFFOLDING = register("copper_scaffolding", OxidizableScaffoldingBlock::new,
+      AbstractBlock.Settings.create()
+          .mapColor(MapColor.ORANGE)
+          .sounds(BlockSoundGroup.COPPER)
+          .strength(3, 6)
+          .requiresTool()
+          .noCollision()
+          .dynamicBounds()
+          .allowsSpawning(Blocks::never)
+          .solidBlock(Blocks::never));
 
   public static Block register(String name, Function<AbstractBlock.Settings, Block> factory,
       AbstractBlock.Settings settings) {

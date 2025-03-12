@@ -3,6 +3,7 @@ package dev.michaud.pandas_blueprints.items;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlueprintTableBlock.BlueprintTableItem;
 import dev.michaud.pandas_blueprints.blocks.ModBlocks;
+import dev.michaud.pandas_blueprints.blocks.OxidizableScaffoldingBlock.OxidizableScaffoldingBlockItem;
 import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
 import dev.michaud.pandas_blueprints.items.wrench.WrenchDispenseBehavior;
 import java.util.function.BiFunction;
@@ -25,6 +26,8 @@ public class ModItems {
   public static final Item FILLED_BLUEPRINT = register("filled_blueprint", FilledBlueprintItem::new,
       new Item.Settings());
   public static final Item BLUEPRINT_TABLE = register(ModBlocks.BLUEPRINT_TABLE, BlueprintTableItem::new,
+      new Item.Settings());
+  public static final Item COPPER_SCAFFOLDING = register(ModBlocks.COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
       new Item.Settings());
   public static final Item COPPER_WRENCH = register("copper_wrench", CopperWrenchItem::new,
       new Item.Settings().repairable(Items.COPPER_INGOT).enchantable(10).maxCount(1).maxDamage(384)

@@ -6,5 +6,6 @@
   "block.pandas_blueprints.blueprint_table.invalid_structure": "Invalid scaffolding perimeter",
   "filled_blueprint.unknown": "Unknown Blueprint",
   "filled_blueprint.id": "ID: \"%s\"",
-  "subtitles.item.wrench.use": "Wrench rotates"
+  "subtitles.item.wrench.use": "Wrench rotates",
+  "tag.item.greenpanda.scaffolding": "Scaffolding"
 }
