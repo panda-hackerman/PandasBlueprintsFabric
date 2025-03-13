@@ -1,8 +1,7 @@
-package dev.michaud.pandas_blueprints.blocks;
+package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
 import net.minecraft.block.ScaffoldingBlock;
 import net.minecraft.state.property.IntProperty;
-import net.minecraft.state.property.Properties;
 
 public interface ScaffoldingBlockMaxDistanceHolder {
   default IntProperty getDistanceProperty() {

@@ -6,7 +6,8 @@
   "mixins": [
     "MixinArmorStandEntity",
     "MixinMinecraftServer",
-    "MixinScaffoldingBlock"
+    "MixinScaffoldingBlock",
+    "MixinScaffoldingItem"
   ],
   "client": [
   ],

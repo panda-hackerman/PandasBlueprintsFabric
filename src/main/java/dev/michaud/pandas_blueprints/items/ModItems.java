@@ -3,7 +3,7 @@ package dev.michaud.pandas_blueprints.items;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlueprintTableBlock.BlueprintTableItem;
 import dev.michaud.pandas_blueprints.blocks.ModBlocks;
-import dev.michaud.pandas_blueprints.blocks.OxidizableScaffoldingBlock.OxidizableScaffoldingBlockItem;
+import dev.michaud.pandas_blueprints.blocks.scaffolding.OxidizableScaffoldingBlock.OxidizableScaffoldingBlockItem;
 import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
 import dev.michaud.pandas_blueprints.items.wrench.WrenchDispenseBehavior;
 import java.util.function.BiFunction;

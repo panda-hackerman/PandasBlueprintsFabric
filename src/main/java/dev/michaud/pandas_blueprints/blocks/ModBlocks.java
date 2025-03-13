@@ -1,6 +1,7 @@
 package dev.michaud.pandas_blueprints.blocks;
 
 import dev.michaud.pandas_blueprints.PandasBlueprints;
+import dev.michaud.pandas_blueprints.blocks.scaffolding.OxidizableScaffoldingBlock;
 import java.util.function.Function;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
