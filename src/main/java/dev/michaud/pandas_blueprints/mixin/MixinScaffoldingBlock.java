@@ -8,10 +8,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ScaffoldingBlock;
 import net.minecraft.block.Waterloggable;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockView;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,10 +27,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinScaffoldingBlock extends Block implements Waterloggable,
     ScaffoldingBlockMaxDistanceHolder {
 
+  @Shadow
+  protected abstract void scheduledTick(BlockState state, ServerWorld world, BlockPos pos,
+      Random random);
+
   public MixinScaffoldingBlock(Settings settings) {
     super(settings);
   }
 
+  // -- CONSTRUCTOR -- //
   @Redirect(method = "<init>",
       at = @At(
           value = "INVOKE",
@@ -42,6 +51,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
     return instance.with(getDistanceProperty(), getMaxDistance());
   }
 
+  // -- CAN REPLACE -- //
   @Inject(method = "canReplace", at = @At("RETURN"), cancellable = true)
   private void canReplace(BlockState state, ItemPlacementContext context,
       CallbackInfoReturnable<Boolean> cir) {
@@ -49,6 +59,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
     cir.cancel();
   }
 
+  // -- COLLISION SHAPE -- //
   @Redirect(method = "getCollisionShape",
       at = @At(
           value = "INVOKE",
@@ -63,6 +74,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
     return instance.get(getDistanceProperty());
   }
 
+  // -- GET PLACEMENT STATE -- //
   @Redirect(method = "getPlacementState",
       at = @At(
           value = "INVOKE",
@@ -78,6 +90,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
     return instance.with(getDistanceProperty(), distance);
   }
 
+  // -- SCHEDULED TICK -- //
   @Redirect(method = "scheduledTick",
       at = @At(
           value = "INVOKE",
@@ -95,7 +108,8 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
           value = "INVOKE",
           ordinal = 0,
           target = "Lnet/minecraft/block/BlockState;with(Lnet/minecraft/state/property/Property;Ljava/lang/Comparable;)Ljava/lang/Object;"))
-  private Object scheduledTickWith(BlockState instance, Property<?> property, Comparable<?> comparable, @Local int distance) {
+  private Object scheduledTickWith(BlockState instance, Property<?> property,
+      Comparable<?> comparable, @Local int distance) {
     if (!property.getName().equals("distance")) {
       throw new IllegalStateException("Mixing in to the wrong property...");
     }
@@ -108,6 +122,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
     return getMaxDistance();
   }
 
+  // -- SHOULD BE BOTTOM -- //
   @Inject(method = "shouldBeBottom", at = @At("HEAD"), cancellable = true)
   private void shouldBeBottom(BlockView world, BlockPos pos, int distance,
       CallbackInfoReturnable<Boolean> cir) {
@@ -116,8 +131,35 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
     cir.cancel();
   }
 
+  // -- CAN PLACE AT -- //
   @ModifyConstant(method = "canPlaceAt", constant = @Constant(intValue = 7))
   private int canPlaceAt(int constant) {
     return getMaxDistance();
   }
+
+  // -- CALCULATE DISTANCE CALLS -- //
+  @Redirect(method = "getPlacementState",
+      at = @At(
+          value = "INVOKE",
+          target = "Lnet/minecraft/block/ScaffoldingBlock;calculateDistance(Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)I"))
+  private int redirectGetPlacementState(BlockView world, BlockPos pos) {
+    return calculateScaffoldingDistance(world, pos);
+  }
+
+  @Redirect(method = "scheduledTick",
+      at = @At(
+          value = "INVOKE",
+          target = "Lnet/minecraft/block/ScaffoldingBlock;calculateDistance(Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)I"))
+  private int redirectScheduledTick(BlockView world, BlockPos pos) {
+    return calculateScaffoldingDistance(world, pos);
+  }
+
+  @Redirect(method = "canPlaceAt",
+      at = @At(
+          value = "INVOKE",
+          target = "Lnet/minecraft/block/ScaffoldingBlock;calculateDistance(Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)I"))
+  private int redirectCanPlaceAt(BlockView world, BlockPos pos) {
+    return calculateScaffoldingDistance(world, pos);
+  }
+
 }

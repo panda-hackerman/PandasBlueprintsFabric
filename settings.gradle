@@ -1,5 +1,9 @@
 pluginManagement {
     repositories {
+        flatDir {
+            dirs 'libs' // For custom libraries, e.g. forked polymer version
+        }
+
         maven {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'

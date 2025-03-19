@@ -1,10 +1,7 @@
 package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
 import dev.michaud.pandas_blueprints.tags.ModTags;
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.ScaffoldingBlock;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -15,14 +12,14 @@ import net.minecraft.world.World;
 
 public class ScaffoldingItemPlacementContextUtil {
 
-  public static ItemPlacementContext getItemPlacementContext(ItemPlacementContext context, int maxDistance) {
+  public static ItemPlacementContext getItemPlacementContext(ItemPlacementContext context, ScaffoldingBlockMaxDistanceHolder block) {
 
     final BlockPos blockPos = context.getBlockPos();
     final World world = context.getWorld();
     BlockState blockState = world.getBlockState(blockPos);
 
     if (!blockState.isIn(ModTags.SCAFFOLDING_BLOCK)) {
-      return ScaffoldingBlock.calculateDistance(world, blockPos) == maxDistance ? null : context;
+      return block.calculateScaffoldingDistance(world, blockPos) == block.getMaxDistance() ? null : context;
     }
 
     Direction direction;
@@ -35,7 +32,7 @@ public class ScaffoldingItemPlacementContextUtil {
     BlockPos.Mutable mutable = blockPos.mutableCopy().move(direction);
 
     int i = 0;
-    while (i < maxDistance) {
+    while (i < block.getMaxDistance()) {
 
       // Too high
       if (!world.isClient && !world.isInBuildLimit(mutable)) {

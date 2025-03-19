@@ -25,12 +25,15 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Polymer :3
-    def polymer_version = '0.11.3+1.21.4'
+    def polymer_version = '0.11.8+1.21.4'
     modImplementation include("eu.pb4:polymer-core:${polymer_version}")
     modImplementation include("eu.pb4:polymer-resource-pack:${polymer_version}")
-    modImplementation include("eu.pb4:polymer-blocks:${polymer_version}")
+//    modImplementation include("eu.pb4:polymer-blocks:${polymer_version}")
     modImplementation include("eu.pb4:polymer-virtual-entity:${polymer_version}")
 //    modImplementation include("eu.pb4:polymer-networking:${polymer_version}")
+
+    modImplementation files("libs/polymer-blocks-0.11.8+1.21.4.jar")
+    include("eu.pb4:polymer-blocks:0.11.8+1.21.4")
 }
 
 processResources {

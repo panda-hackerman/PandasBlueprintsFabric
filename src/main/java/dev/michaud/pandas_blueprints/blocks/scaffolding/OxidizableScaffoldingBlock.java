@@ -6,16 +6,22 @@ import eu.pb4.polymer.blocks.api.BlockModelType;
 import eu.pb4.polymer.blocks.api.PolymerBlockModel;
 import eu.pb4.polymer.blocks.api.PolymerBlockResourceUtils;
 import eu.pb4.polymer.blocks.api.PolymerTexturedBlock;
+import eu.pb4.polymer.blocks.impl.DefaultModelData;
 import eu.pb4.polymer.core.api.item.PolymerBlockItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Oxidizable;
 import net.minecraft.block.ScaffoldingBlock;
+import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
 
@@ -25,7 +31,6 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
   public static final int MAX_DISTANCE = 16;
 
   public static final IntProperty DISTANCE = IntProperty.of("distance", 0, MAX_DISTANCE);
-
   public static final MapCodec<ScaffoldingBlock> CODEC = createCodec(OxidizableScaffoldingBlock::new);
 
   public static final PolymerBlockModel BLOCK_MODEL_TOP = PolymerBlockModel.of(
@@ -34,13 +39,13 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
       Identifier.of(PandasBlueprints.GREENPANDA_ID, "block/copper_scaffolding_unstable"));
 
   public static final BlockState POLYMER_BLOCK_STATE_TOP = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.VINES_BLOCK, BLOCK_MODEL_TOP);
+      BlockModelType.TOP_SCAFFOLDING, BLOCK_MODEL_TOP);
   public static final BlockState POLYMER_BLOCK_STATE_BOTTOM = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.VINES_BLOCK, BLOCK_MODEL_BOTTOM);
+      BlockModelType.BOTTOM_SCAFFOLDING, BLOCK_MODEL_BOTTOM);
   public static final BlockState POLYMER_BLOCK_STATE_TOP_WATERLOGGED = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.TRANSPARENT_BLOCK_WATERLOGGED, BLOCK_MODEL_TOP);
+      BlockModelType.TOP_SCAFFOLDING_WATERLOGGED, BLOCK_MODEL_TOP);
   public static final BlockState POLYMER_BLOCK_STATE_BOTTOM_WATERLOGGED = PolymerBlockResourceUtils.requestBlock(
-      BlockModelType.TRANSPARENT_BLOCK_WATERLOGGED, BLOCK_MODEL_BOTTOM);
+      BlockModelType.BOTTOM_SCAFFOLDING_WATERLOGGED, BLOCK_MODEL_BOTTOM);
 
   public OxidizableScaffoldingBlock(Settings settings) {
     super(settings);
@@ -53,6 +58,11 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
   @Override
   protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
     builder.add(DISTANCE, WATERLOGGED, BOTTOM);
+  }
+
+  @Override
+  protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+    super.scheduledTick(state, world, pos, random);
   }
 
   @Override
@@ -78,6 +88,11 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
   public int getMaxDistance() {
     return MAX_DISTANCE;
   }
+//
+//  @Override
+//  public OxidationLevel getDegradationLevel() {
+//    return oxidationLevel;
+//  }
 
   public static class OxidizableScaffoldingBlockItem extends PolymerBlockItem {
 
@@ -96,7 +111,8 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
 
     @Override
     public @Nullable ItemPlacementContext getPlacementContext(ItemPlacementContext context) {
-      return ScaffoldingItemPlacementContextUtil.getItemPlacementContext(context, MAX_DISTANCE);
+      return ScaffoldingItemPlacementContextUtil.getItemPlacementContext(context,
+          (ScaffoldingBlockMaxDistanceHolder) getBlock());
     }
 
     @Override
