@@ -21,17 +21,42 @@ import org.jetbrains.annotations.NotNull;
 @SuppressWarnings("unused")
 public class ModItems {
 
-  public static final Item EMPTY_BLUEPRINT = register("empty_blueprint", EmptyBlueprintItem::new,
-      new Item.Settings());
-  public static final Item FILLED_BLUEPRINT = register("filled_blueprint", FilledBlueprintItem::new,
-      new Item.Settings());
-  public static final Item BLUEPRINT_TABLE = register(ModBlocks.BLUEPRINT_TABLE, BlueprintTableItem::new,
-      new Item.Settings());
-  public static final Item COPPER_SCAFFOLDING = register(ModBlocks.COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
-      new Item.Settings());
+  public static final Item EMPTY_BLUEPRINT = register("empty_blueprint",
+      EmptyBlueprintItem::new, new Item.Settings());
+  public static final Item FILLED_BLUEPRINT = register("filled_blueprint",
+      FilledBlueprintItem::new, new Item.Settings());
+  public static final Item BLUEPRINT_TABLE = register(ModBlocks.BLUEPRINT_TABLE,
+      BlueprintTableItem::new, new Item.Settings());
   public static final Item COPPER_WRENCH = register("copper_wrench", CopperWrenchItem::new,
       new Item.Settings().repairable(Items.COPPER_INGOT).enchantable(10).maxCount(1).maxDamage(384)
           .attributeModifiers(CopperWrenchItem.createAttributeModifiers()));
+
+  // Scaffolding
+  public static final Item COPPER_SCAFFOLDING = register(
+      ModBlocks.COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
+  public static final Item EXPOSED_COPPER_SCAFFOLDING = register(
+      ModBlocks.EXPOSED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
+  public static final Item WEATHERED_COPPER_SCAFFOLDING = register(
+      ModBlocks.WEATHERED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
+  public static final Item OXIDIZED_COPPER_SCAFFOLDING = register(
+      ModBlocks.OXIDIZED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
+  // -- Waxed scaffolding
+  public static final Item WAXED_COPPER_SCAFFOLDING = register(
+      ModBlocks.WAXED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
+  public static final Item WAXED_EXPOSED_COPPER_SCAFFOLDING = register(
+      ModBlocks.WAXED_EXPOSED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
+  public static final Item WAXED_WEATHERED_COPPER_SCAFFOLDING = register(
+      ModBlocks.WAXED_WEATHERED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
+  public static final Item WAXED_OXIDIZED_COPPER_SCAFFOLDING = register(
+      ModBlocks.WAXED_OXIDIZED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
+      new Item.Settings());
 
   /**
    * Register an item

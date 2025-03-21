@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "bottom=false": {
+      "model": "greenpanda:block/oxidized_copper_scaffolding_stable"
+    },
+    "bottom=true": {
+      "model": "greenpanda:block/oxidized_copper_scaffolding_unstable"
+    }
+  }
+}

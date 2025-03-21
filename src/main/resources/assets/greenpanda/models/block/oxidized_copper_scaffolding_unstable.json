@@ -1,0 +1,9 @@
+{
+	"parent": "greenpanda:block/copper_scaffolding_unstable",
+	"textures": {
+		"particle": "greenpanda:block/oxidized_copper_scaffolding_top",
+		"top": "greenpanda:block/oxidized_copper_scaffolding_top",
+		"side": "greenpanda:block/oxidized_copper_scaffolding_side",
+		"bottom": "greenpanda:block/oxidized_copper_scaffolding_bottom"
+	}
+}
