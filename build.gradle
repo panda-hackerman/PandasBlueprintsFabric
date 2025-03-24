@@ -80,6 +80,7 @@ jar {
 
 loom {
     accessWidenerPath = file("src/main/resources/pandas_blueprints.accesswidener")
+    log4jConfigs.from(file('src/main/resources/log4j.xml')) // Custom logging
 }
 
 // configure the maven publication

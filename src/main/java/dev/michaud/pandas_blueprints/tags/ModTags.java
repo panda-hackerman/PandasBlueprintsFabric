@@ -11,6 +11,7 @@ public class ModTags {
 
   public static final TagKey<Item> SCAFFOLDING_ITEM = ofItem("scaffolding");
   public static final TagKey<Block> SCAFFOLDING_BLOCK = ofBlock("scaffolding");
+  public static final TagKey<Block> COPPER_SCAFFOLDING_BLOCK = ofBlock("copper_scaffolding");
 
   private static TagKey<Item> ofItem(String name) {
     final Identifier id = Identifier.of(PandasBlueprints.GREENPANDA_ID, name);

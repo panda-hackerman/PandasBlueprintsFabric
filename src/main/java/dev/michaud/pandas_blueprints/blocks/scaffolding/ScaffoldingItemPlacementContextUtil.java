@@ -12,7 +12,7 @@ import net.minecraft.world.World;
 
 public class ScaffoldingItemPlacementContextUtil {
 
-  public static ItemPlacementContext getItemPlacementContext(ItemPlacementContext context, ScaffoldingBlockMaxDistanceHolder block) {
+  public static ItemPlacementContext getItemPlacementContext(ItemPlacementContext context, ScaffoldingBlockDistanceHolder block) {
 
     final BlockPos blockPos = context.getBlockPos();
     final World world = context.getWorld();

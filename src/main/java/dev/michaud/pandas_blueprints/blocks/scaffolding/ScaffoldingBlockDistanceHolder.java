@@ -9,13 +9,21 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Type;
 import net.minecraft.world.BlockView;
 
-public interface ScaffoldingBlockMaxDistanceHolder {
+public interface ScaffoldingBlockDistanceHolder {
+
+  /** Get the distance property */
   default IntProperty getDistanceProperty() {
     return ScaffoldingBlock.DISTANCE;
   }
 
+  /** Get the max number of the distance property */
   default int getMaxDistance() {
     return 7;
+  }
+
+  /** Get the distance before the scaffolding falls */
+  default int getFallDistance() {
+    return getMaxDistance();
   }
 
   default int calculateScaffoldingDistance(BlockView world, BlockPos pos) {
@@ -25,7 +33,7 @@ public interface ScaffoldingBlockMaxDistanceHolder {
 
     int distance = getMaxDistance();
 
-    if (stateDownOne.getBlock() instanceof ScaffoldingBlockMaxDistanceHolder downScaffolding) {
+    if (stateDownOne.getBlock() instanceof ScaffoldingBlockDistanceHolder downScaffolding) {
       // Standing on Scaffolding
       distance = stateDownOne.get(downScaffolding.getDistanceProperty());
     } else if (stateDownOne.isSideSolidFullSquare(world, posDown, Direction.UP)) {
@@ -37,7 +45,7 @@ public interface ScaffoldingBlockMaxDistanceHolder {
 
       final BlockState stateInDirection = world.getBlockState(pos.offset(direction));
 
-      if (stateInDirection.getBlock() instanceof ScaffoldingBlockMaxDistanceHolder dirScaffolding) {
+      if (stateInDirection.getBlock() instanceof ScaffoldingBlockDistanceHolder dirScaffolding) {
         int dist = stateInDirection.get(dirScaffolding.getDistanceProperty()) + 1;
         distance = Math.min(distance, dist);
 

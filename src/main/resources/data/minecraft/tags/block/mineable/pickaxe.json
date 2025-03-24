@@ -1,6 +1,6 @@
 {
+  "replace": false,
   "values": [
-    "minecraft:scaffolding",
     "#greenpanda:copper_scaffolding"
   ]
 }

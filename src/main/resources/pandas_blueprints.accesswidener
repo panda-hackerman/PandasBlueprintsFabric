@@ -3,3 +3,5 @@ accessWidener v2 named
 accessible class net/minecraft/server/MinecraftServer$ResourceManagerHolder
 
 accessible method net/minecraft/block/Block setDefaultState (Lnet/minecraft/block/BlockState;)V
+
+accessible method net/minecraft/block/ScaffoldingBlock shouldBeBottom (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;I)Z
