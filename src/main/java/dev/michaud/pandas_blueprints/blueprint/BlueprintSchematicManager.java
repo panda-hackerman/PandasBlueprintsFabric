@@ -131,6 +131,7 @@ public class BlueprintSchematicManager extends PersistentState {
     Identifier candidate;
     do {
       candidate = baseId.withPath(path + "_" + count);
+      count += 1;
     } while (schematicMap.containsKey(candidate));
 
     return candidate;

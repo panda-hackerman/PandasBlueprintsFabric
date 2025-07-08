@@ -1,0 +1,32 @@
+{
+  "parent": "pandas_blueprints:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "pandas_blueprints:waxed_weathered_copper_scaffolding"
+      }
+    },
+    "has_copper_scaffolding": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "pandas_blueprints:weathered_copper_scaffolding"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_copper_scaffolding"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "pandas_blueprints:waxed_weathered_copper_scaffolding"
+    ]
+  }
+}

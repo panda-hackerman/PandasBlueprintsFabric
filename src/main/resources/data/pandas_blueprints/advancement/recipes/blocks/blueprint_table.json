@@ -1,0 +1,35 @@
+{
+  "parent": "pandas_blueprints:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "pandas_blueprints:blueprint_table"
+      }
+    },
+    "has_blueprint": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "pandas_blueprints:empty_blueprint",
+              "pandas_blueprints:filled_blueprint"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_blueprint"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "pandas_blueprints:blueprint_table"
+    ]
+  }
+}

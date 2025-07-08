@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    "pandas_blueprints:oxidized_copper_scaffolding",
+    "minecraft:honeycomb"
+  ],
+  "result": {
+    "count": 1,
+    "id": "pandas_blueprints:waxed_oxidized_copper_scaffolding"
+  }
+}

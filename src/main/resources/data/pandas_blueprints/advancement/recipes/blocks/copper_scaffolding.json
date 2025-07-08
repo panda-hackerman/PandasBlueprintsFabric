@@ -1,0 +1,32 @@
+{
+  "parent": "pandas_blueprints:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "pandas_blueprints:copper_scaffolding"
+      }
+    },
+    "has_scaffolding": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:scaffolding"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_scaffolding"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "pandas_blueprints:copper_scaffolding"
+    ]
+  }
+}

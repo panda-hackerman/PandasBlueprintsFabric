@@ -1,0 +1,33 @@
+{
+  "criteria": {
+    "wax_on": {
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "block": {
+                "blocks": "#greenpanda:waxable"
+              }
+            }
+          },
+          {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "items": "minecraft:honeycomb"
+            }
+          }
+        ]
+      },
+      "trigger": "minecraft:item_used_on_block"
+    }
+  },
+  "requirements": [
+    [
+      "wax_on"
+    ]
+  ],
+  "rewards": {
+    "function": "pandas_blueprints:wax_on"
+  }
+}

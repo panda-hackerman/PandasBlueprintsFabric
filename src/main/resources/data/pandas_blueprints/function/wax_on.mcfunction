@@ -1,0 +1,1 @@
+advancement grant @s only minecraft:husbandry/wax_on

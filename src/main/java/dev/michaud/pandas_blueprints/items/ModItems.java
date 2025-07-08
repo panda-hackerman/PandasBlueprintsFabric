@@ -8,10 +8,12 @@ import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
 import dev.michaud.pandas_blueprints.items.wrench.WrenchDispenseBehavior;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
+import net.minecraft.item.ItemGroups;
 import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
@@ -31,7 +33,7 @@ public class ModItems {
       new Item.Settings().repairable(Items.COPPER_INGOT).enchantable(10).maxCount(1).maxDamage(384)
           .attributeModifiers(CopperWrenchItem.createAttributeModifiers()));
 
-  // Scaffolding
+  // -- Scaffolding
   public static final Item COPPER_SCAFFOLDING = register(
       ModBlocks.COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
       new Item.Settings());
@@ -44,6 +46,7 @@ public class ModItems {
   public static final Item OXIDIZED_COPPER_SCAFFOLDING = register(
       ModBlocks.OXIDIZED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
       new Item.Settings());
+
   // -- Waxed scaffolding
   public static final Item WAXED_COPPER_SCAFFOLDING = register(
       ModBlocks.WAXED_COPPER_SCAFFOLDING, OxidizableScaffoldingBlockItem::new,
@@ -81,5 +84,29 @@ public class ModItems {
 
   public static void registerModItems() {
     DispenserBlock.registerBehavior(COPPER_WRENCH, new WrenchDispenseBehavior());
+
+    // Add to creative menu
+    ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(group -> {
+      group.addAfter(Items.BRUSH, COPPER_WRENCH);
+      group.addBefore(Items.MAP, EMPTY_BLUEPRINT);
+    });
+
+    ItemGroupEvents.modifyEntriesEvent(ItemGroups.REDSTONE).register(group -> {
+      group.addAfter(Items.CRAFTER, BLUEPRINT_TABLE);
+    });
+
+    ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(group -> {
+      group.addAfter(Items.LECTERN, BLUEPRINT_TABLE);
+
+      group.addAfter(Items.SCAFFOLDING,
+          COPPER_SCAFFOLDING,
+          EXPOSED_COPPER_SCAFFOLDING,
+          WEATHERED_COPPER_SCAFFOLDING,
+          OXIDIZED_COPPER_SCAFFOLDING,
+          WAXED_COPPER_SCAFFOLDING,
+          WAXED_EXPOSED_COPPER_SCAFFOLDING,
+          WAXED_WEATHERED_COPPER_SCAFFOLDING,
+          WAXED_OXIDIZED_COPPER_SCAFFOLDING);
+    });
   }
 }

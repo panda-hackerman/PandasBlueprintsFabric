@@ -20,7 +20,6 @@ import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.client.session.report.ReporterEnvironment.Server;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -100,8 +99,8 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
    *
    * @see BlueprintTableBlockEntity#saveSchematic(String, ServerWorld, BlockBox, BlockPos)
    */
-  protected boolean tryFillBlueprint(PlayerEntity player, Hand hand, @NotNull World world, BlockPos pos,
-      ItemStack stack) {
+  protected boolean tryFillBlueprint(PlayerEntity player, Hand hand, @NotNull World world,
+      BlockPos pos, ItemStack stack) {
 
     if (!(world instanceof ServerWorld serverWorld)) {
       return false;
@@ -127,8 +126,8 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     }
 
     // -- Save the file...
-    final Identifier blueprintId = BlueprintTableBlockEntity.saveSchematic(blueprintName, serverWorld,
-        outline.get(), pos);
+    final Identifier blueprintId = BlueprintTableBlockEntity.saveSchematic(blueprintName,
+        serverWorld, outline.get(), pos);
 
     if (blueprintId == null) {
       player.sendMessage(Text.translatable("block.pandas_blueprints.blueprint_table.internal_error")

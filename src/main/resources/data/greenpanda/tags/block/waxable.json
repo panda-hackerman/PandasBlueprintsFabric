@@ -1,0 +1,8 @@
+{
+  "values": [
+    "pandas_blueprints:copper_scaffolding",
+    "pandas_blueprints:exposed_copper_scaffolding",
+    "pandas_blueprints:weathered_copper_scaffolding",
+    "pandas_blueprints:oxidized_copper_scaffolding"
+  ]
+}

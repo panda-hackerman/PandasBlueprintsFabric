@@ -5,6 +5,8 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MixinArmorStandEntity",
+    "MixinAxeItem",
+    "MixinHoneycombItem",
     "MixinScaffoldingBlock",
     "MixinScaffoldingItem"
   ],

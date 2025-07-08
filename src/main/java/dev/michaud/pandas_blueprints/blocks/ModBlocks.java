@@ -3,6 +3,7 @@ package dev.michaud.pandas_blueprints.blocks;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.scaffolding.OxidizableScaffoldingBlock;
 import java.util.function.Function;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.registry.OxidizableBlocksRegistry;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -11,6 +12,8 @@ import net.minecraft.block.MapColor;
 import net.minecraft.block.Oxidizable;
 import net.minecraft.block.Oxidizable.OxidationLevel;
 import net.minecraft.block.enums.NoteBlockInstrument;
+import net.minecraft.item.ItemGroups;
+import net.minecraft.item.Items;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.sound.BlockSoundGroup;
@@ -70,9 +73,13 @@ public class ModBlocks {
   }
 
   public static void registerModBlocks() {
+
+    // Make blocks oxidizable
     OxidizableBlocksRegistry.registerOxidizableBlockPair(COPPER_SCAFFOLDING, EXPOSED_COPPER_SCAFFOLDING);
     OxidizableBlocksRegistry.registerOxidizableBlockPair(EXPOSED_COPPER_SCAFFOLDING, WEATHERED_COPPER_SCAFFOLDING);
     OxidizableBlocksRegistry.registerOxidizableBlockPair(WEATHERED_COPPER_SCAFFOLDING, OXIDIZED_COPPER_SCAFFOLDING);
+
+    // Makes blocks waxable
     OxidizableBlocksRegistry.registerWaxableBlockPair(COPPER_SCAFFOLDING, WAXED_COPPER_SCAFFOLDING);
     OxidizableBlocksRegistry.registerWaxableBlockPair(EXPOSED_COPPER_SCAFFOLDING, WAXED_EXPOSED_COPPER_SCAFFOLDING);
     OxidizableBlocksRegistry.registerWaxableBlockPair(WEATHERED_COPPER_SCAFFOLDING, WAXED_WEATHERED_COPPER_SCAFFOLDING);
