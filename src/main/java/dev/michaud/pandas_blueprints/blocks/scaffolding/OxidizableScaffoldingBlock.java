@@ -62,7 +62,8 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
         .with(BOTTOM, shouldBeBottom(world, pos, distance));
 
     if (blockState.get(getDistanceProperty()) >= getFallDistance()) {
-      FallingBlockEntity.spawnFromBlock(world, pos, blockState);
+      var e = FallingBlockEntity.spawnFromBlock(world, pos, blockState);
+      e.dropItem = true;
     } else if (state != blockState) {
       world.setBlockState(pos, blockState, Block.NOTIFY_ALL);
     }

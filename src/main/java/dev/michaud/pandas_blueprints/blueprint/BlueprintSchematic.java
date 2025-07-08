@@ -1,7 +1,8 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
 import com.google.common.collect.ImmutableList;
-import dev.michaud.pandas_blueprints.PandasBlueprints;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.michaud.pandas_blueprints.util.BoxDetector;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -13,11 +14,12 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.InvalidNbtException;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.RegistryEntryLookup;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryOps;
 import net.minecraft.util.collection.IdList;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
@@ -33,9 +35,18 @@ import org.jetbrains.annotations.Nullable;
 public class BlueprintSchematic {
 
   public static final int NBT_VERSION = 1;
+  public static final int MIN_SUPPORTED_VERSION = NBT_VERSION;
+
   private final List<BlueprintBlockInfo> blockInfoList;
   private final Map<Block, List<BlueprintBlockInfo>> blockToInfos = new HashMap<>();
   private final Vec3i size;
+
+  public static final Codec<BlueprintSchematic> CODEC = RecordCodecBuilder.create(
+      instance -> instance.group(
+          RegistryOps.getEntryLookupCodec(RegistryKeys.BLOCK),
+          NbtCompound.CODEC.fieldOf("data")
+              .forGetter(schematic -> schematic.writeNbt(new NbtCompound()))
+      ).apply(instance, BlueprintSchematic::readNbt));
 
   protected BlueprintSchematic(List<BlueprintBlockInfo> blockInfoList, Vec3i size) {
     this.blockInfoList = blockInfoList;
@@ -44,13 +55,15 @@ public class BlueprintSchematic {
 
   /**
    * Creates a new schematic
-   * @param world The world
-   * @param box The bounding box to save
+   *
+   * @param world    The world
+   * @param box      The bounding box to save
    * @param tablePos The position of the blueprint table
    * @return A new schematic that stores the blocks in the given box
    */
   @Contract(value = "_, _, _-> new", pure = true)
-  public static @NotNull BlueprintSchematic create(@NotNull World world, @NotNull BlockBox box, @NotNull BlockPos tablePos) {
+  public static @NotNull BlueprintSchematic create(@NotNull World world, @NotNull BlockBox box,
+      @NotNull BlockPos tablePos) {
 
     final ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
 
@@ -67,7 +80,8 @@ public class BlueprintSchematic {
 
       final BlockState state = world.getBlockState(pos);
       final BlockEntity blockEntity = world.getBlockEntity(pos);
-      final BlueprintBlockInfo blockInfo = BlueprintBlockInfo.of(world, offsetPos, state, blockEntity);
+      final BlueprintBlockInfo blockInfo = BlueprintBlockInfo.of(world, offsetPos, state,
+          blockEntity);
 
       builder.add(blockInfo);
     }
@@ -106,7 +120,8 @@ public class BlueprintSchematic {
 
       final NbtCompound block = new NbtCompound();
 
-      final int[] infoPos = new int[]{blockInfo.pos.getX(), blockInfo.pos.getY(), blockInfo.pos.getZ()};
+      final int[] infoPos = new int[]{blockInfo.pos.getX(), blockInfo.pos.getY(),
+          blockInfo.pos.getZ()};
       final int infoStateId = palette.getIdOrCreate(blockInfo.state);
       final @Nullable NbtCompound infoNbt = blockInfo.nbt;
 
@@ -137,70 +152,103 @@ public class BlueprintSchematic {
 
   /**
    * Create a schematic from nbt
+   *
    * @param blockLookup Block lookup to use
-   * @param nbt Nbt to read from
+   * @param nbt         Nbt to read from
    * @return A new blueprint schematic
+   * @throws InvalidNbtException           If the NBT is malformed or of an unsupported version.
+   * @throws UnsupportedOperationException If the data version is higher than the current version.
    */
   @Contract("_, _ -> new")
   public static @NotNull BlueprintSchematic readNbt(RegistryEntryLookup<Block> blockLookup,
       @NotNull NbtCompound nbt) {
 
-    final int version = nbt.getInt("DataVersion");
-
-    if (version == 0) {
-      throw new InvalidNbtException("Unknown data version: " + version);
-    }
+    // Check data version
+    final int version = nbt.getInt("DataVersion")
+        .orElseThrow(() -> new InvalidNbtException("Missing DataVersion tag"));
 
     if (version > NBT_VERSION) {
-      PandasBlueprints.LOGGER.warn("Trying to deserialize future version...");
+      throw new UnsupportedOperationException(
+          "Cannot read future version: " + version + " (I'm still on version "
+              + NBT_VERSION + "!)");
+    }
+
+    if (version < MIN_SUPPORTED_VERSION) {
+      throw new InvalidNbtException(
+          "Unsupported version: " + version + " (minimum supported is "
+              + MIN_SUPPORTED_VERSION + ")");
     }
 
     // Generate palette
     final Palette palette = new Palette();
-    final NbtList paletteStates = nbt.getList("palette", NbtElement.COMPOUND_TYPE);
+    final NbtList paletteStates = nbt.getList("palette")
+        .orElseThrow(() -> new InvalidNbtException("Can't find block palette"));
 
     for (int i = 0; i < paletteStates.size(); i++) {
-      NbtCompound compound = paletteStates.getCompound(i);
+      NbtCompound compound = paletteStates.getCompound(i).orElseThrow();
       palette.set(NbtHelper.toBlockState(blockLookup, compound), i);
     }
 
     // Blocks
-    final NbtList blocks = nbt.getList("blocks", NbtElement.COMPOUND_TYPE);
+    final NbtList blocks = nbt.getListOrEmpty("blocks");
 
     final ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
 
     for (int i = 0; i < blocks.size(); i++) {
 
-      final NbtCompound nbtBlock = blocks.getCompound(i);
+      final NbtCompound nbtBlock = blocks.getCompound(i)
+          .orElseThrow(() -> new InvalidNbtException("Couldn't find block"));
 
-      final int[] posArr = nbtBlock.getIntArray("pos");
+      final int[] posArr = nbtBlock.getIntArray("pos") // Position as an array [x, y, z]
+          .orElseThrow(() -> new InvalidNbtException("Missing block position"));
+
+      final int blockStateId = nbtBlock.getInt("state") // Block state id in the palette
+          .orElseThrow(() -> new InvalidNbtException("Invalid block state"));
+
+      final NbtCompound blockNbt = nbtBlock.getCompound("nbt") // If the block has nbt data
+          .orElse(null);
+
       final BlockPos blockPos = new BlockPos(posArr[0], posArr[1], posArr[2]);
-      final BlockState state = palette.getState(nbtBlock.getInt("state"));
-      final NbtCompound blockNbt = nbtBlock.contains("nbt") ? nbtBlock.getCompound("nbt") : null;
+      final BlockState state = palette.getState(blockStateId);
 
       builder.add(new BlueprintBlockInfo(blockPos, state, blockNbt));
     }
 
     // Size
-    final int[] sizeArray = nbt.getIntArray("size");
+    final int[] sizeArray = nbt.getIntArray("size")
+        .orElseThrow(() -> new InvalidNbtException("Missing blueprint size"));
     final Vec3i size = new Vec3i(sizeArray[0], sizeArray[1], sizeArray[2]);
 
     return new BlueprintSchematic(builder.build(), size);
   }
 
+  /**
+   * Information about a specific block in a blueprint
+   *
+   * @param pos   The block's relative position
+   * @param state The block state
+   * @param nbt   The block's nbt, if any.
+   */
   public record BlueprintBlockInfo(@NotNull BlockPos pos, @NotNull BlockState state,
                                    @Nullable NbtCompound nbt) {
 
     @Contract(value = "_, _, _, _ -> new", pure = true)
     public static @NotNull BlueprintBlockInfo of(@NotNull World world, @NotNull BlockPos pos,
         @NotNull BlockState state, @Nullable BlockEntity entity) {
+
       final DynamicRegistryManager registryManager = world.getRegistryManager();
-      final NbtCompound nbt = (entity == null) ? null : entity.createNbtWithId(registryManager);
+      final NbtCompound nbt = (entity == null) ? null
+          : entity.createNbtWithIdentifyingData(
+              registryManager); //TODO: Method to write without pos ?
 
       return new BlueprintBlockInfo(pos, state, nbt);
     }
   }
 
+  /**
+   * A "palette" of blocks states. Associates each state with a unique ID, to more efficiently
+   * serialize a large number of states.
+   */
   static final class Palette implements Iterable<BlockState> {
 
     private final IdList<BlockState> ids = new IdList<>();

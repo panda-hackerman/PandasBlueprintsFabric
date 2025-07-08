@@ -4,9 +4,8 @@ import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlueprintTableBlock;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematicManager;
-import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematicManagerHolder;
 import dev.michaud.pandas_blueprints.blueprint.virtualelement.VirtualSchematicDisplayElement;
-import dev.michaud.pandas_blueprints.components.ModComponentTypes;
+import dev.michaud.pandas_blueprints.components.BlueprintIdComponent;
 import dev.michaud.pandas_blueprints.items.FilledBlueprintItem;
 import dev.michaud.pandas_blueprints.util.BoxDetector;
 import java.util.Optional;
@@ -15,10 +14,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ScaffoldingBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockBox;
@@ -37,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BlueprintTableBlockEntity extends BlockEntity implements
     BlockEntityInventory<BlueprintTableBlockEntity> {
+
+  public static final int BLUEPRINT_MAX_DISTANCE = 10; // Maximum side length of the blueprint
 
   private @Nullable Identifier blueprintId;
   private @Nullable VirtualSchematicDisplayElement schematicDisplayElement;
@@ -73,7 +74,7 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
 
     // Update blueprint id
     final Identifier blueprintId = hasBlueprintInventory
-        ? blockEntity.getBlueprint().get(ModComponentTypes.BLUEPRINT_ID)
+        ? BlueprintIdComponent.getIdOrNull(blockEntity.getBlueprint())
         : null;
 
     if (blueprintId != blockEntity.blueprintId) {
@@ -89,7 +90,9 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
 
   }
 
-  /** Show blueprint to applicable players */
+  /**
+   * Show blueprint to applicable players
+   */
   public void showBlueprintToPlayers() {
 
     final ServerWorld world = (ServerWorld) getWorld();
@@ -137,37 +140,49 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
         .orElse(null);
   }
 
+
   /**
-   * Saves the surrounding area to a .nbt file
+   * Check if this block at the given position should be considered a valid frame for a schematic
+   * perimeter.
    *
-   * @return The ID of the saves schematic
+   * @param world    The world
+   * @param tablePos The table position
+   * @param pos      The position to check
+   * @return True if the block is valid.
+   * @implNote Checks if the block at the given position is a scaffolding block, or if tablePos ==
+   * pos.
    */
-  public @Nullable Identifier saveSchematic(@NotNull String name) {
-    if (world == null) {
-      return null;
-    }
+  public static boolean isValidFrameBlock(World world, BlockPos tablePos, BlockPos pos) {
+    return pos == tablePos || world.getBlockState(pos).getBlock() instanceof ScaffoldingBlock;
+  }
 
-    final BlockPos tablePos = getPos();
-    final Optional<BlockBox> outline = BoxDetector.detectOutlineOf(getPos(), 10,
-        (pos) -> pos.equals(tablePos)
-            || world.getBlockState(pos).getBlock() instanceof ScaffoldingBlock);
+  /**
+   * Get the outline for a schematic, if a valid perimeter exists.
+   *
+   * @param world    The world
+   * @param tablePos Position of the blueprint table
+   * @return The outline, or empty if no valid frame exists.
+   */
+  public static Optional<BlockBox> getOutline(World world, BlockPos tablePos) {
+    return BoxDetector.detectOutlineOf(tablePos, BLUEPRINT_MAX_DISTANCE,
+        pos -> isValidFrameBlock(world, tablePos, pos));
+  }
 
-    if (outline.isEmpty()) {
-      return null;
-    }
+  /**
+   * Saves an outline to an .nbt file.
+   *
+   * @param name     The name to use for the file
+   * @param world    The world
+   * @param outline  The outline of the schematic
+   * @param tablePos The position of the blueprint table
+   * @return The ID of the saved schematic, or null if it failed to save for some reason.
+   */
+  public static @Nullable Identifier saveSchematic(@NotNull String name, @NotNull ServerWorld world,
+      @NotNull BlockBox outline, @NotNull BlockPos tablePos) {
+    final BlueprintSchematic schematic = BlueprintSchematic.create(world, outline, tablePos);
+    final BlueprintSchematicManager schematicManager = BlueprintSchematicManager.getState(world);
 
-    final BlueprintSchematic schematic = BlueprintSchematic.create(world, outline.get(), tablePos);
-
-    final BlueprintSchematicManagerHolder server = (BlueprintSchematicManagerHolder) world.getServer();
-    final Optional<BlueprintSchematicManager> schematicManager =
-        server == null ? Optional.empty() : server.getBlueprintSchematicManager();
-
-    if (schematicManager.isEmpty()) {
-      PandasBlueprints.LOGGER.error("No blueprint schematic manager on server !!!");
-      return null;
-    }
-
-    return schematicManager.get().saveSchematic(schematic, name);
+    return schematicManager.saveSchematic(schematic, name);
   }
 
   /**
@@ -183,15 +198,10 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
       return Optional.empty();
     }
 
-    final Optional<BlueprintSchematicManager> manager = ((BlueprintSchematicManagerHolder) getWorld().getServer()).getBlueprintSchematicManager();
+    final Identifier id = BlueprintIdComponent.getIdOrNull(getBlueprint());
+    final BlueprintSchematicManager manager = BlueprintSchematicManager.getState(getWorld().getServer());
 
-    if (manager.isEmpty()) {
-      PandasBlueprints.LOGGER.error("No Blueprint Schematic manager found on the server!");
-      return Optional.empty();
-    }
-
-    final Identifier id = getBlueprint().get(ModComponentTypes.BLUEPRINT_ID);
-    return manager.get().getSchematic(id);
+    return manager.getSchematic(id);
   }
 
   public ItemStack getBlueprint() {
@@ -235,19 +245,19 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
   }
 
   @Override
-  protected void readNbt(NbtCompound nbt, WrapperLookup registries) {
-    super.readNbt(nbt, registries);
+  protected void readData(ReadView view) {
+    super.readData(view);
 
-    final ItemStack blueprint = ItemStack.fromNbtOrEmpty(registries, nbt.getCompound("Blueprint"));
+    final ItemStack blueprint = view.read("Blueprint", ItemStack.CODEC).orElse(ItemStack.EMPTY);
     setBlueprint(blueprint);
   }
 
   @Override
-  protected void writeNbt(NbtCompound nbt, WrapperLookup registries) {
-    super.writeNbt(nbt, registries);
+  protected void writeData(WriteView view) {
+    super.writeData(view);
 
     if (hasBlueprint()) {
-      nbt.put("Blueprint", getBlueprint().toNbt(registries));
+      view.put("Blueprint", ItemStack.CODEC, getBlueprint());
     }
   }
 

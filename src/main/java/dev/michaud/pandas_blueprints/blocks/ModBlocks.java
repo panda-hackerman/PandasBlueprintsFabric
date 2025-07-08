@@ -31,8 +31,6 @@ public class ModBlocks {
       AbstractBlock.Settings.create()
           .mapColor(Blocks.COPPER_BLOCK.getDefaultMapColor())
           .sounds(BlockSoundGroup.COPPER)
-          .strength(3, 6)
-          .requiresTool()
           .noCollision()
           .dynamicBounds()
           .allowsSpawning(Blocks::never)

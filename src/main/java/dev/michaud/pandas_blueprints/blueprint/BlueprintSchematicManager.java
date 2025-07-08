@@ -1,210 +1,159 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
-import com.mojang.datafixers.DataFixer;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
-import dev.michaud.pandas_blueprints.util.BlueprintPathUtil;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.block.Block;
-import net.minecraft.nbt.InvalidNbtException;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtSizeTracker;
-import net.minecraft.registry.RegistryEntryLookup;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.FixedBufferInputStream;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.InvalidIdentifierException;
-import net.minecraft.util.PathUtil;
-import net.minecraft.util.WorldSavePath;
-import net.minecraft.world.level.storage.LevelStorage.Session;
+import net.minecraft.util.path.PathUtil;
+import net.minecraft.world.PersistentState;
+import net.minecraft.world.PersistentStateType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class BlueprintSchematicManager {
+public class BlueprintSchematicManager extends PersistentState {
 
-  private final DataFixer dataFixer;
-  private final RegistryEntryLookup<Block> blockLookup;
-  private final Path generatedPath; // File path to ./world/generated/
+  private static final Pattern NAME_WITH_COUNT = Pattern.compile("(?<name>.*) _(?<count>\\d+)",
+      Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+  private static final Pattern RESERVED_WINDOWS_NAMES = Pattern.compile(
+      ".*\\.|(?:COM|CLOCK\\$|CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\..*)?",
+      Pattern.CASE_INSENSITIVE);
 
-  private ResourceManager resourceManager;
+  public static final Codec<ConcurrentMap<Identifier, BlueprintSchematic>> CONCURRENT_MAP_CODEC =
+      Codec.unboundedMap(Identifier.CODEC, BlueprintSchematic.CODEC)
+          .xmap(ConcurrentHashMap::new, Function.identity());
 
-  public Map<Identifier, BlueprintSchematic> schematicMap = new ConcurrentHashMap<>();
+  public static final Codec<BlueprintSchematicManager> CODEC = RecordCodecBuilder.create(
+      instance -> instance.group(
+          CONCURRENT_MAP_CODEC
+              .fieldOf("schematics")
+              .forGetter(manager -> manager.schematicMap)
+      ).apply(instance, BlueprintSchematicManager::new));
 
-  public BlueprintSchematicManager(ResourceManager resourceManager, Session session,
-      DataFixer dataFixer, RegistryEntryLookup<Block> blockLookup) {
-    this.resourceManager = resourceManager;
-    this.dataFixer = dataFixer;
-    this.blockLookup = blockLookup;
-    this.generatedPath = session.getDirectory(WorldSavePath.GENERATED).normalize();
+  public static final PersistentStateType<BlueprintSchematicManager> TYPE = new PersistentStateType<>(
+      PandasBlueprints.GREENPANDA_ID + "_schematics",
+      BlueprintSchematicManager::new,
+      CODEC,
+      null
+  );
+
+  private final ConcurrentMap<Identifier, BlueprintSchematic> schematicMap;
+
+  private BlueprintSchematicManager() {
+    this(new ConcurrentHashMap<>());
   }
 
-  public void setResourceManager(ResourceManager resourceManager) {
-    this.resourceManager = resourceManager;
+  private BlueprintSchematicManager(ConcurrentMap<Identifier, BlueprintSchematic> schematicMap) {
+    this.schematicMap = schematicMap;
+  }
+
+  public static BlueprintSchematicManager getState(ServerWorld world) {
+    return getState(world.getServer());
+  }
+
+  public static BlueprintSchematicManager getState(MinecraftServer server) {
+    final ServerWorld world = server.getWorld(ServerWorld.OVERWORLD);
+    assert world != null;
+
+    return world.getPersistentStateManager().getOrCreate(TYPE);
   }
 
   /**
-   * Get a schematic with the given identifier. If it isn't already loaded, will attempt to load it
-   * from the file system.
+   * Get a schematic with the given identifier, if it exists.
    *
    * @param id The id of the schematic
    * @return The schematic, or empty if it doesn't exist or couldn't be found
    */
   public Optional<BlueprintSchematic> getSchematic(@Nullable Identifier id) {
-
-    if (id == null) {
-      return Optional.empty();
-    }
-
-    if (schematicMap.containsKey(id)) {
-      return Optional.of(schematicMap.get(id));
-    }
-
-    return loadSchematic(id);
-  }
-
-  /**
-   * Load a schematic from the file system
-   *
-   * @param id The id of the schematic
-   * @return The schematic, or empty if it couldn't be loaded
-   */
-  public Optional<BlueprintSchematic> loadSchematic(Identifier id) {
-
-    final Path path = getPath(id);
-
-    if (!Files.exists(path)) {
-      return Optional.empty();
-    }
-
-    try (InputStream inStream = new FixedBufferInputStream(new FileInputStream(path.toFile()))) {
-      NbtCompound readNbt = NbtIo.readCompressed(inStream, NbtSizeTracker.ofUnlimitedBytes());
-      BlueprintSchematic schematic = BlueprintSchematic.readNbt(blockLookup, readNbt);
-
-      return Optional.of(schematic);
-    } catch (IOException | InvalidNbtException e) {
-      PandasBlueprints.LOGGER.error("Couldn't open blueprint: {}.\n{}", id, e);
+    if (id != null) {
+      return Optional.ofNullable(schematicMap.get(id));
     }
 
     return Optional.empty();
   }
 
   /**
-   * Save a schematic to the file system
+   * Add a new schematic
    *
    * @param schematic The schematic to save
+   * @param name      The of the blueprint
    * @return The identifier of the new schematic
    */
-  public @Nullable Identifier saveSchematic(@NotNull BlueprintSchematic schematic, @NotNull String name) {
+  public @Nullable Identifier saveSchematic(@NotNull BlueprintSchematic schematic,
+      @NotNull String name) {
 
     final String namespace = PandasBlueprints.GREENPANDA_ID;
-
-    final NbtCompound schematicNbt = schematic.writeNbt(new NbtCompound());
-
-    final Identifier identifier;
-    final Path path;
-    final Path parent;
-
-    try {
-      final String uniqueName = BlueprintPathUtil.getNextUniqueName(getParent(namespace), name, ".nbt");
-
-      identifier = Identifier.of(namespace, uniqueName);
-      path = getPath(identifier);
-      parent = path.getParent();
-    } catch (IOException e) {
-      PandasBlueprints.LOGGER.error("Ran into an IO problem while trying to save schematic: ", e);
-      return null;
-    } catch (InvalidIdentifierException e) {
-      PandasBlueprints.LOGGER.error("Invalid identifier trying to save schematic: ", e);
-      return null;
-    }
-
-    if (parent == null) {
-      PandasBlueprints.LOGGER.error("Couldn't save the schematic, the parent folder is null!");
-      return null;
-    }
-
-    // Create parent
-    try {
-      Path create = Files.exists(parent) ? parent.toRealPath() : parent;
-      Files.createDirectories(create);
-    } catch (IOException e) {
-      PandasBlueprints.LOGGER.error("Couldn't save the schematic, failed to create the parent directory!");
-      return null;
-    }
-
-    // Write to file
-    try (OutputStream outStream = new FileOutputStream(path.toFile())) {
-      NbtIo.writeCompressed(schematicNbt, outStream);
-    } catch (IOException e) {
-      PandasBlueprints.LOGGER.error("Couldn't save the schematic, failed to write to file at {}", path);
-      return null;
-    }
+    final Identifier identifier = getNextUnusedIdentifier(namespace, name);
 
     schematicMap.put(identifier, schematic);
+    markDirty();
+
     return identifier;
   }
 
   /**
-   * Gets the path to the blueprint folder of this namespace
+   * Get an identifier that isn't already associated with a blueprint. If the given values are
+   * already absent, the return value is equivalent to {@code Identifier.of(namespace, name)}.
+   * Otherwise, the name is appended with {@literal "_<number>"}, increasing until a unique name is
+   * found.
    *
-   * @param namespace The namespace of the blueprint folder
-   * @return A path that points to {@code ./world/generated/<namespace>/blueprints/}
-   *
-   * @see BlueprintSchematicManager#getPath(Identifier)
+   * @param namespace The namespace to use
+   * @param name      The proposed name
+   * @return A unique identifier.
    */
-  protected Path getParent(@NotNull String namespace) {
-    try {
-      Path blueprintFolder = generatedPath
-          .resolve(namespace)
-          .resolve("blueprints");
+  public @NotNull Identifier getNextUnusedIdentifier(String namespace, String name) {
 
-      if (blueprintFolder.startsWith(generatedPath)
-          && PathUtil.isAllowedName(blueprintFolder)) {
-        return blueprintFolder;
-      } else {
-        throw new InvalidIdentifierException("Invalid path: " + blueprintFolder);
-      }
-    } catch (InvalidPathException e) {
-      throw new InvalidIdentifierException("Invalid path with namespace" + namespace);
+    final String baseName = formatBlueprintName(name);
+    final Identifier baseId = Identifier.of(namespace, baseName);
+
+    if (!schematicMap.containsKey(baseId)) {
+      return baseId; // We're good!
     }
+
+    // Extract existing count, if present
+    String path = baseName;
+    int count = 1;
+
+    final Matcher matcher = NAME_WITH_COUNT.matcher(baseName);
+    if (matcher.matches()) {
+      path = matcher.group("name");
+      count = Integer.parseInt(matcher.group("count"));
+    }
+
+    // Find a new value
+    Identifier candidate;
+    do {
+      candidate = baseId.withPath(path + "_" + count);
+    } while (schematicMap.containsKey(candidate));
+
+    return candidate;
   }
 
   /**
-   * Gets the path to the blueprint file with this id.
+   * Format the given string so that it is a valid name.
    *
-   * @param id The identifier of the blueprint
-   * @return A path that points to {@code ./world/generated/<namespace>/blueprints/<path>.nbt}
-   * @see BlueprintSchematicManager#getParent(String)
+   * @param name The string to format
+   * @return A valid blueprint name
+   * @implNote Converts the string to lowercase and replaces all non-alphanumeric characters (a-Z,
+   * 0-9) other than underscores and hyphens with an underscore. Also checks that the string doesn't
+   * match any reserved Windows file names.
    */
-  protected Path getPath(@NotNull Identifier id) {
-    try {
-      // ./world/generated/<namespace>/blueprints/
-      Path blueprintFolder = generatedPath
-          .resolve(id.getNamespace())
-          .resolve("blueprints");
+  public static String formatBlueprintName(String name) {
+    name = PathUtil.replaceInvalidChars(name.toLowerCase())
+        .replaceAll("(?![a-z0-9._-]).", "_");
 
-      // Points to filename.nbt in the blueprint folder (^^^)
-      Path filePath = PathUtil.getResourcePath(blueprintFolder, id.getPath(), ".nbt").normalize();
-
-      if (filePath.startsWith(generatedPath)
-          && PathUtil.isAllowedName(filePath)) {
-        return filePath;
-      } else {
-        throw new InvalidIdentifierException("Invalid path: " + filePath);
-      }
-    } catch (InvalidPathException e) {
-      throw new InvalidIdentifierException("Invalid path: " + id, e);
+    if (RESERVED_WINDOWS_NAMES.matcher(name).matches()) {
+      name = "_" + name + "_";
     }
+
+    return name;
   }
 
 }

@@ -12,6 +12,7 @@
   "block.pandas_blueprints.waxed_weathered_copper_scaffolding": "Waxed Weathered Reinforced Scaffolding",
   "block.pandas_blueprints.waxed_oxidized_copper_scaffolding": "Waxed Oxidized Reinforced Scaffolding",
   "block.pandas_blueprints.blueprint_table.invalid_structure": "Invalid scaffolding perimeter",
+  "block.pandas_blueprints.blueprint_table.internal_error": "Ran into an internal error",
   "filled_blueprint.unknown": "Unknown Blueprint",
   "filled_blueprint.id": "ID: \"%s\"",
   "subtitles.item.wrench.use": "Wrench rotates",

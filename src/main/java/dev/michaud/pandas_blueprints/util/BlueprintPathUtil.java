@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.PathUtil;
+import net.minecraft.util.path.PathUtil;
 
+@Deprecated(since = "1.1.0")
 public class BlueprintPathUtil {
 
   private static final int MAX_FILENAME_LENGTH = 255;
@@ -25,13 +24,14 @@ public class BlueprintPathUtil {
    *
    * @return A file name, prefixed with {@code name}, that does not currently exist within
    * {@code parentFolder}.
-   *
    * @implNote This strips any illegal characters from {@code name}, then attempts to make a
    * directory with the name and the extension. If this succeeds, the directory is deleted and the
    * name with the extension is returned. If not, it appends {@code #2} to the name and tries again
    * until it succeeds.
    */
-  public static String getNextUniqueName(Path parentFolder, String name, String extension) throws IOException {
+  @Deprecated(since = "1.1.0")
+  public static String getNextUniqueName(Path parentFolder, String name, String extension)
+      throws IOException {
 
     name = format(name);
     Matcher matcher = FILE_NAME_WITH_COUNT.matcher(name);
@@ -65,6 +65,7 @@ public class BlueprintPathUtil {
     }
   }
 
+  @Deprecated(since = "1.1.0")
   public static String countedName(String name, String extension, int number) {
     final String suffix = number != 0 ? "_" + number : "";
     final int maxLength = MAX_FILENAME_LENGTH - suffix.length() - extension.length();
@@ -76,6 +77,7 @@ public class BlueprintPathUtil {
     return name + suffix;
   }
 
+  @Deprecated(since = "1.1.0")
   public static String format(String name) {
 
     name = PathUtil.replaceInvalidChars(name.toLowerCase())
