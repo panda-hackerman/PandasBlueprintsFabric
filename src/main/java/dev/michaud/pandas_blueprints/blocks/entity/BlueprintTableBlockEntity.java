@@ -153,7 +153,7 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
    * pos.
    */
   public static boolean isValidFrameBlock(World world, BlockPos tablePos, BlockPos pos) {
-    return pos == tablePos || world.getBlockState(pos).getBlock() instanceof ScaffoldingBlock;
+    return pos.equals(tablePos) || world.getBlockState(pos).getBlock() instanceof ScaffoldingBlock;
   }
 
   /**
