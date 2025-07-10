@@ -6,7 +6,9 @@
   "mixins": [
     "MixinArmorStandEntity",
     "MixinAxeItem",
+    "MixinFallLocation",
     "MixinHoneycombItem",
+    "MixinLivingEntity",
     "MixinScaffoldingBlock",
     "MixinScaffoldingItem"
   ],
@@ -14,5 +16,8 @@
   ],
   "injectors": {
     "defaultRequire": 1
+  },
+  "mixinextras": {
+    "minVersion": "0.5.0-rc.2"
   }
 }
