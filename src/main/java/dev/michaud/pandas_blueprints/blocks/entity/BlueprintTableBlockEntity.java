@@ -8,6 +8,7 @@ import dev.michaud.pandas_blueprints.blueprint.virtualelement.VirtualSchematicDi
 import dev.michaud.pandas_blueprints.components.BlueprintIdComponent;
 import dev.michaud.pandas_blueprints.items.FilledBlueprintItem;
 import dev.michaud.pandas_blueprints.util.BoxDetector;
+import dev.michaud.pandas_blueprints.util.RotationHelper;
 import java.util.Optional;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -18,6 +19,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockBox;
@@ -66,10 +68,11 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
     }
 
     // Update rotation...
-    final Direction facingState = state.get(BlueprintTableBlock.FACING);
-
     if (blockEntity.schematicDisplayElement != null) {
-      blockEntity.schematicDisplayElement.setFacing(facingState);
+      final Direction facingState = state.get(BlueprintTableBlock.FACING);
+      final BlockRotation rotation = RotationHelper.directionToBlockRotation(facingState);
+
+      blockEntity.schematicDisplayElement.setRotation(rotation);
     }
 
     // Update blueprint id
@@ -94,7 +97,6 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
    * Show blueprint to applicable players
    */
   public void showBlueprintToPlayers() {
-
     final ServerWorld world = (ServerWorld) getWorld();
 
     if (schematicDisplayElement == null || world == null) {
@@ -118,7 +120,6 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
   }
 
   public void onDestroy() {
-
     if (schematicDisplayElement != null) {
       schematicDisplayElement.destroy();
     }
@@ -136,10 +137,41 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
     }
 
     schematicDisplayElement = getCurrentSchematic()
-        .map(bp -> new VirtualSchematicDisplayElement(bp, this))
+        .map(blueprint -> new VirtualSchematicDisplayElement(blueprint, this))
         .orElse(null);
   }
 
+  /**
+   * Get the schematic that corresponds to the item stored currently stored
+   *
+   * @return The schematic (or empty, if there is none)
+   */
+  public Optional<BlueprintSchematic> getCurrentSchematic() {
+
+    if (!hasBlueprint()
+        || getWorld() == null
+        || getWorld().getServer() == null) {
+      return Optional.empty();
+    }
+
+    final Identifier id = BlueprintIdComponent.getIdOrNull(getBlueprint());
+    final BlueprintSchematicManager manager = BlueprintSchematicManager.getState(getWorld().getServer());
+
+    return manager.getSchematic(id);
+  }
+
+  public ItemStack getBlueprint() {
+    return getItems().getFirst();
+  }
+
+  public void setBlueprint(ItemStack blueprint) {
+    getItems().set(0, blueprint);
+    markDirty();
+  }
+
+  public boolean hasBlueprint() {
+    return !getBlueprint().isEmpty();
+  }
 
   /**
    * Check if this block at the given position should be considered a valid frame for a schematic
@@ -169,10 +201,10 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
   }
 
   /**
-   * Saves an outline to an .nbt file.
+   * Create a schematic and save it to persistent storage.
    *
-   * @param name     The name to use for the file
-   * @param world    The world
+   * @param name     The name to use for the schematic
+   * @param world    The world where the blocks are
    * @param outline  The outline of the schematic
    * @param tablePos The position of the blueprint table
    * @return The ID of the saved schematic, or null if it failed to save for some reason.
@@ -185,38 +217,25 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
     return schematicManager.saveSchematic(schematic, name);
   }
 
-  /**
-   * Get the schematic that corresponds to the item stored currently stored
-   *
-   * @return The schematic (or none, if it doesn't exist or couldn't be found)
-   */
-  public Optional<BlueprintSchematic> getCurrentSchematic() {
+  // -- BlockEntity overrides
+  @Override
+  protected void readData(ReadView view) {
+    super.readData(view);
 
-    if (!hasBlueprint()
-        || getWorld() == null
-        || getWorld().getServer() == null) {
-      return Optional.empty();
+    final ItemStack blueprint = view.read("Blueprint", ItemStack.CODEC).orElse(ItemStack.EMPTY);
+    setBlueprint(blueprint);
+  }
+
+  @Override
+  protected void writeData(WriteView view) {
+    super.writeData(view);
+
+    if (hasBlueprint()) {
+      view.put("Blueprint", ItemStack.CODEC, getBlueprint());
     }
-
-    final Identifier id = BlueprintIdComponent.getIdOrNull(getBlueprint());
-    final BlueprintSchematicManager manager = BlueprintSchematicManager.getState(getWorld().getServer());
-
-    return manager.getSchematic(id);
   }
 
-  public ItemStack getBlueprint() {
-    return getItems().getFirst();
-  }
-
-  public void setBlueprint(ItemStack blueprint) {
-    getItems().set(0, blueprint);
-    markDirty();
-  }
-
-  public boolean hasBlueprint() {
-    return !getBlueprint().isEmpty();
-  }
-
+  // -- Inventory overrides
   @Override
   public @NotNull DefaultedList<ItemStack> getItems() {
     return items;
@@ -242,23 +261,6 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
   @Override
   public int getMaxCountPerStack() {
     return 1;
-  }
-
-  @Override
-  protected void readData(ReadView view) {
-    super.readData(view);
-
-    final ItemStack blueprint = view.read("Blueprint", ItemStack.CODEC).orElse(ItemStack.EMPTY);
-    setBlueprint(blueprint);
-  }
-
-  @Override
-  protected void writeData(WriteView view) {
-    super.writeData(view);
-
-    if (hasBlueprint()) {
-      view.put("Blueprint", ItemStack.CODEC, getBlueprint());
-    }
   }
 
 }

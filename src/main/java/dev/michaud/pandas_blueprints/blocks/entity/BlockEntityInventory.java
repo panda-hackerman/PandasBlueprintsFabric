@@ -8,6 +8,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.collection.DefaultedList;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Basic inventory solution for a block entity
+ * @param <T> The block entity type
+ */
 public interface BlockEntityInventory<T extends BlockEntity> extends Inventory {
 
   @NotNull DefaultedList<ItemStack> getItems();
@@ -16,7 +20,6 @@ public interface BlockEntityInventory<T extends BlockEntity> extends Inventory {
 
   static <T extends BlockEntity> @NotNull BlockEntityInventory<T> of(@NotNull T entity, int size) {
     return new BlockEntityInventory<>() {
-
       final DefaultedList<ItemStack> items = DefaultedList.ofSize(size, ItemStack.EMPTY);
 
       @Override
