@@ -272,18 +272,6 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
   }
 
   @Override
-  protected void onStateReplaced(BlockState state, ServerWorld world, BlockPos pos, boolean moved) {
-
-    if (world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity) {
-      ItemScatterer.spawn(world, pos, blockEntity);
-      world.updateComparators(pos, this);
-      blockEntity.onDestroy();
-    }
-
-    super.onStateReplaced(state, world, pos, moved);
-  }
-
-  @Override
   protected BlockState rotate(BlockState state, BlockRotation rotation) {
     return state.with(FACING, rotation.rotate(state.get(FACING)));
   }

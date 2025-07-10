@@ -1,6 +1,5 @@
 package dev.michaud.pandas_blueprints.blocks.entity;
 
-import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlueprintTableBlock;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematicManager;
@@ -119,14 +118,6 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
     }
   }
 
-  public void onDestroy() {
-    if (schematicDisplayElement != null) {
-      schematicDisplayElement.destroy();
-    }
-
-    schematicDisplayElement = null;
-  }
-
   /**
    * Change the schematic display to reflect the current blueprint
    */
@@ -149,13 +140,12 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
   public Optional<BlueprintSchematic> getCurrentSchematic() {
 
     if (!hasBlueprint()
-        || getWorld() == null
-        || getWorld().getServer() == null) {
+        || !(world instanceof ServerWorld serverWorld)) {
       return Optional.empty();
     }
 
     final Identifier id = BlueprintIdComponent.getIdOrNull(getBlueprint());
-    final BlueprintSchematicManager manager = BlueprintSchematicManager.getState(getWorld().getServer());
+    final BlueprintSchematicManager manager = BlueprintSchematicManager.getState(serverWorld);
 
     return manager.getSchematic(id);
   }
@@ -232,6 +222,16 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
 
     if (hasBlueprint()) {
       view.put("Blueprint", ItemStack.CODEC, getBlueprint());
+    }
+  }
+
+  @Override
+  public void onBlockReplaced(BlockPos pos, BlockState oldState) {
+    super.onBlockReplaced(pos, oldState);
+
+    if (schematicDisplayElement != null) {
+      schematicDisplayElement.destroy();
+      schematicDisplayElement = null;
     }
   }
 
