@@ -1,10 +1,12 @@
 package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
 import dev.michaud.pandas_blueprints.PandasBlueprints;
+import dev.michaud.pandas_blueprints.blocks.BlockWithCustomSounds;
 import dev.michaud.pandas_blueprints.tags.ModTags;
 import eu.pb4.polymer.blocks.api.PolymerTexturedBlock;
 import eu.pb4.polymer.core.api.item.PolymerBlockItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
+import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Oxidizable;
@@ -32,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
 
 public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements PolymerTexturedBlock,
-    Oxidizable, Waterloggable, ScaffoldingBlockDistanceHolder {
+    Oxidizable, Waterloggable, ScaffoldingBlockDistanceHolder, BlockWithCustomSounds {
 
   public static final int MAX_DISTANCE = 16;
   public static final IntProperty DISTANCE = IntProperty.of("distance", 0, MAX_DISTANCE);
@@ -107,6 +109,11 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
   @Override
   public OxidationLevel getDegradationLevel() {
     return oxidationLevel;
+  }
+
+  @Override
+  public Set<BlockState> getAllClientBlockStates() {
+    return OxidizableScaffoldingBlockModels.ALL_STATES;
   }
 
   public static class OxidizableScaffoldingBlockItem extends PolymerBlockItem {

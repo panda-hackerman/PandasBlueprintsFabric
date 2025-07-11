@@ -1,6 +1,7 @@
 package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import eu.pb4.polymer.blocks.api.BlockModelType;
 import eu.pb4.polymer.blocks.api.PolymerBlockModel;
@@ -31,6 +32,8 @@ public class OxidizableScaffoldingBlockModels {
   public static final ImmutableMap<OxidationLevel, BlockState> POLYMER_BLOCK_STATES_TOP_WATERLOGGED;
   public static final ImmutableMap<OxidationLevel, BlockState> POLYMER_BLOCK_STATES_BOTTOM_WATERLOGGED;
 
+  public static final ImmutableSet<BlockState> ALL_STATES;
+
   static {
     ImmutableMap.Builder<OxidationLevel, BlockState> topBuilder = ImmutableMap.builder();
     ImmutableMap.Builder<OxidationLevel, BlockState> bottomBuilder = ImmutableMap.builder();
@@ -55,6 +58,15 @@ public class OxidizableScaffoldingBlockModels {
     POLYMER_BLOCK_STATES_BOTTOM = bottomBuilder.build();
     POLYMER_BLOCK_STATES_TOP_WATERLOGGED = topWaterloggedBuilder.build();
     POLYMER_BLOCK_STATES_BOTTOM_WATERLOGGED = bottomWaterloggedBuilder.build();
+
+    ImmutableSet.Builder<BlockState> allStateBuilder = ImmutableSet.builder();
+
+    ALL_STATES = allStateBuilder
+        .addAll(POLYMER_BLOCK_STATES_TOP.values())
+        .addAll(POLYMER_BLOCK_STATES_BOTTOM.values())
+        .addAll(POLYMER_BLOCK_STATES_TOP_WATERLOGGED.values())
+        .addAll(POLYMER_BLOCK_STATES_BOTTOM_WATERLOGGED.values())
+        .build();
   }
 
   public static void registerScaffoldingBlockModels() {
