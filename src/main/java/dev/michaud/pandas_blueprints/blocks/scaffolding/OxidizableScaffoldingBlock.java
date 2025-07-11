@@ -14,6 +14,7 @@ import net.minecraft.block.Waterloggable;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager.Builder;
 import net.minecraft.state.property.BooleanProperty;
@@ -114,7 +115,7 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
     final String itemModelName;
 
     public OxidizableScaffoldingBlockItem(Block block, Settings settings) {
-      super(block, settings);
+      super(block, settings, Items.SCAFFOLDING);
 
       OxidationLevel level = ((Oxidizable) block).getDegradationLevel();
       itemModelName = modelFromOxidation(level);
