@@ -15,6 +15,7 @@
   "block.pandas_blueprints.blueprint_table.internal_error": "Ran into an internal error",
   "filled_blueprint.unknown": "Unknown Blueprint",
   "filled_blueprint.id": "ID: \"%s\"",
+  "subtitles.block.blueprint_table.use": "Blueprint table used",
   "subtitles.item.wrench.use": "Wrench rotates",
   "tag.item.greenpanda.scaffolding": "Scaffolding"
 }

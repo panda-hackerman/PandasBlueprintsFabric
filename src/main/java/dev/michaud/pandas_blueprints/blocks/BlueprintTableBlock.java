@@ -1,5 +1,6 @@
 package dev.michaud.pandas_blueprints.blocks;
 
+import com.google.common.collect.ImmutableSet;
 import com.mojang.serialization.MapCodec;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.entity.BlueprintTableBlockEntity;
@@ -7,6 +8,7 @@ import dev.michaud.pandas_blueprints.blocks.entity.ModBlockEntityTypes;
 import dev.michaud.pandas_blueprints.items.EmptyBlueprintItem;
 import dev.michaud.pandas_blueprints.items.FilledBlueprintItem;
 import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
+import dev.michaud.pandas_blueprints.sounds.ModSounds;
 import eu.pb4.polymer.blocks.api.BlockModelType;
 import eu.pb4.polymer.blocks.api.PolymerBlockModel;
 import eu.pb4.polymer.blocks.api.PolymerBlockResourceUtils;
@@ -14,6 +16,7 @@ import eu.pb4.polymer.blocks.api.PolymerTexturedBlock;
 import eu.pb4.polymer.core.api.item.PolymerBlockItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
@@ -39,7 +42,6 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
@@ -54,7 +56,8 @@ import xyz.nucleoid.packettweaker.PacketContext;
 /**
  * Table that lets you display blueprints
  */
-public class BlueprintTableBlock extends BlockWithEntity implements PolymerTexturedBlock {
+public class BlueprintTableBlock extends BlockWithEntity implements PolymerTexturedBlock,
+    BlockWithCustomSounds {
 
   /**
    * If this block has a blueprint or not
@@ -87,7 +90,14 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
         BLOCK_MODEL_EMPTY);
     POLYMER_BLOCK_STATE_WITH_BLUEPRINT = PolymerBlockResourceUtils.requestBlock(typeFull,
         BLOCK_MODEL_WITH_BLUEPRINT);
+
+    assert POLYMER_BLOCK_STATE_EMPTY != null;
+    assert POLYMER_BLOCK_STATE_WITH_BLUEPRINT != null;
   }
+
+  public static final Set<BlockState> ALL_STATES = ImmutableSet.of(
+      POLYMER_BLOCK_STATE_EMPTY,
+      POLYMER_BLOCK_STATE_WITH_BLUEPRINT);
 
   public BlueprintTableBlock(Settings settings) {
     super(settings);
@@ -139,6 +149,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     final ItemStack filled = FilledBlueprintItem.createBlueprint(blueprintId, player);
 
     stack.decrementUnlessCreative(1, player);
+    world.playSound(null, pos, ModSounds.BLUEPRINT_FILL, SoundCategory.BLOCKS);
 
     if (stack.isEmpty()) {
       player.setStackInHand(hand, filled);
@@ -305,6 +316,11 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     } else {
       return 0;
     }
+  }
+
+  @Override
+  public Set<BlockState> getAllClientBlockStates() {
+    return ALL_STATES;
   }
 
   /**

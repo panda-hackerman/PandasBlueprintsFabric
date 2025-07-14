@@ -34,6 +34,7 @@ public class PandasBlueprints implements ModInitializer {
     ModTags.registerModTags();
 
     PolymerResourcePackUtils.addModAssets(MOD_ID);
+    PolymerResourcePackUtils.markAsRequired();
 
     LOGGER.info("Panda's Blueprints initialized");
   }
