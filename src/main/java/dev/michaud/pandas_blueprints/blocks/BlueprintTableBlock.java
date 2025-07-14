@@ -8,6 +8,7 @@ import dev.michaud.pandas_blueprints.blocks.entity.ModBlockEntityTypes;
 import dev.michaud.pandas_blueprints.items.EmptyBlueprintItem;
 import dev.michaud.pandas_blueprints.items.FilledBlueprintItem;
 import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
+import dev.michaud.pandas_blueprints.sounds.ModSounds;
 import eu.pb4.polymer.blocks.api.BlockModelType;
 import eu.pb4.polymer.blocks.api.PolymerBlockModel;
 import eu.pb4.polymer.blocks.api.PolymerBlockResourceUtils;
@@ -148,6 +149,7 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
     final ItemStack filled = FilledBlueprintItem.createBlueprint(blueprintId, player);
 
     stack.decrementUnlessCreative(1, player);
+    world.playSound(null, pos, ModSounds.BLUEPRINT_FILL, SoundCategory.BLOCKS);
 
     if (stack.isEmpty()) {
       player.setStackInHand(hand, filled);

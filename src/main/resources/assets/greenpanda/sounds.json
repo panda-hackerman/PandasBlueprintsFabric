@@ -5,5 +5,14 @@
       "greenpanda:item/wrench/rotate1",
       "greenpanda:item/wrench/rotate2"
     ]
+  },
+  "blueprint_fill": {
+    "subtitle": "subtitles.block.blueprint_table.use",
+    "sounds": [
+      "greenpanda:block/blueprint/fill",
+      "minecraft:ui/cartography_table/drawmap1",
+      "minecraft:ui/cartography_table/drawmap2",
+      "minecraft:ui/cartography_table/drawmap3"
+    ]
   }
 }
