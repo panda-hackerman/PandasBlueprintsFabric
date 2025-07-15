@@ -1,11 +1,13 @@
 package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import eu.pb4.polymer.blocks.api.BlockModelType;
 import eu.pb4.polymer.blocks.api.PolymerBlockModel;
 import eu.pb4.polymer.blocks.api.PolymerBlockResourceUtils;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Oxidizable.OxidationLevel;
 import net.minecraft.util.Identifier;
@@ -35,10 +37,10 @@ public class OxidizableScaffoldingBlockModels {
   public static final ImmutableSet<BlockState> ALL_STATES;
 
   static {
-    ImmutableMap.Builder<OxidationLevel, BlockState> topBuilder = ImmutableMap.builder();
-    ImmutableMap.Builder<OxidationLevel, BlockState> bottomBuilder = ImmutableMap.builder();
-    ImmutableMap.Builder<OxidationLevel, BlockState> topWaterloggedBuilder = ImmutableMap.builder();
-    ImmutableMap.Builder<OxidationLevel, BlockState> bottomWaterloggedBuilder = ImmutableMap.builder();
+    Builder<OxidationLevel, BlockState> topBuilder = ImmutableMap.builder();
+    Builder<OxidationLevel, BlockState> bottomBuilder = ImmutableMap.builder();
+    Builder<OxidationLevel, BlockState> topWaterloggedBuilder = ImmutableMap.builder();
+    Builder<OxidationLevel, BlockState> bottomWaterloggedBuilder = ImmutableMap.builder();
 
     TOP_MODELS.forEach((level, model) -> {
       topBuilder.put(level, PolymerBlockResourceUtils
@@ -83,6 +85,21 @@ public class OxidizableScaffoldingBlockModels {
     } else {
       return POLYMER_BLOCK_STATES_BOTTOM_WATERLOGGED.get(oxidationLevel);
     }
+  }
+
+  public static Identifier getPolymerItemModel(Block block) {
+    if (!(block instanceof OxidizableScaffoldingBlock scaffoldingBlock)) {
+      throw new IllegalArgumentException("Must be a scaffolding block");
+    }
+
+    final String modelName = switch (scaffoldingBlock.getDegradationLevel()) {
+      case UNAFFECTED -> "copper_scaffolding";
+      case EXPOSED -> "exposed_copper_scaffolding";
+      case WEATHERED -> "weathered_copper_scaffolding";
+      case OXIDIZED -> "oxidized_copper_scaffolding";
+    };
+
+    return Identifier.of(PandasBlueprints.GREENPANDA_ID, modelName);
   }
 
   private static @NotNull PolymerBlockModel pathToBlockModel(String path) {
