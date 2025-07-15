@@ -11,10 +11,13 @@ import java.util.function.Function;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.DispenserBlock;
+import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
@@ -27,11 +30,16 @@ public class ModItems {
       EmptyBlueprintItem::new, new Item.Settings());
   public static final Item FILLED_BLUEPRINT = register("filled_blueprint",
       FilledBlueprintItem::new, new Item.Settings());
+  public static final Item COPPER_WRENCH = register("copper_wrench", CopperWrenchItem::new,
+      new Item.Settings()
+          .repairable(Items.COPPER_INGOT)
+          .enchantable(10)
+          .maxCount(1)
+          .maxDamage(384)
+          .attributeModifiers(CopperWrenchItem.createAttributeModifiers()));
+
   public static final Item BLUEPRINT_TABLE = register(ModBlocks.BLUEPRINT_TABLE,
       BlueprintTableItem::new, new Item.Settings());
-  public static final Item COPPER_WRENCH = register("copper_wrench", CopperWrenchItem::new,
-      new Item.Settings().repairable(Items.COPPER_INGOT).enchantable(10).maxCount(1).maxDamage(384)
-          .attributeModifiers(CopperWrenchItem.createAttributeModifiers()));
 
   // -- Scaffolding
   public static final Item COPPER_SCAFFOLDING = register(
@@ -64,22 +72,37 @@ public class ModItems {
   /**
    * Register an item
    */
-  public static Item register(@NotNull String name, @NotNull Function<Item.Settings, Item> factory,
+  private static Item register(@NotNull String name, @NotNull Function<Item.Settings, Item> factory,
       @NotNull Item.Settings settings) {
-
     final Identifier id = Identifier.of(PandasBlueprints.MOD_ID, name);
     final RegistryKey<Item> registryKey = RegistryKey.of(RegistryKeys.ITEM, id);
 
-    settings.registryKey(registryKey);
-    return Items.register(registryKey, factory, settings);
+    return register(registryKey, factory, settings);
   }
 
   /**
    * Register a block item
    */
-  public static Item register(Block block, BiFunction<Block, Settings, Item> factory,
+  private static Item register(Block block, BiFunction<Block, Settings, Item> factory,
       Item.Settings settings) {
-    return Items.register(block, factory, settings);
+
+    final Identifier id = Registries.BLOCK.getId(block);
+    final RegistryKey<Item> registryKey = RegistryKey.of(RegistryKeys.ITEM, id);
+
+    return register(registryKey,
+        itemSettings -> factory.apply(block, itemSettings),
+        settings.useBlockPrefixedTranslationKey());
+  }
+
+  private static Item register(RegistryKey<Item> key, Function<Item.Settings, Item> factory,
+      Item.Settings settings) {
+    final Item item = factory.apply(settings.registryKey(key));
+
+    if (item instanceof BlockItem blockItem) {
+      blockItem.appendBlocks(Item.BLOCK_ITEMS, item);
+    }
+
+    return Registry.register(Registries.ITEM, key, item);
   }
 
   public static void registerModItems() {

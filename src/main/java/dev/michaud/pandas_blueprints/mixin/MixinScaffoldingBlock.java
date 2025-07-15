@@ -1,5 +1,7 @@
 package dev.michaud.pandas_blueprints.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.scaffolding.ScaffoldingBlockDistanceHolder;
@@ -7,9 +9,14 @@ import dev.michaud.pandas_blueprints.tags.ModTags;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.EntityShapeContext;
 import net.minecraft.block.ScaffoldingBlock;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.Waterloggable;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.Items;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
@@ -52,6 +59,24 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
       CallbackInfoReturnable<Boolean> cir) {
     cir.setReturnValue(context.getStack().isIn(ModTags.SCAFFOLDING_ITEM));
     cir.cancel();
+  }
+
+  // -- OUTLINE SHAPE -- //
+  @Redirect(method = "getOutlineShape", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;asItem()Lnet/minecraft/item/Item;"))
+  private Item getOutlineShapeAsItemRedirect(Block instance) {
+    return Items.SCAFFOLDING;
+  }
+
+  @WrapOperation(method = "getOutlineShape", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/ShapeContext;isHolding(Lnet/minecraft/item/Item;)Z"))
+  private boolean getOutlineShapeIsHoldingRedirect(ShapeContext instance, Item item,
+      Operation<Boolean> original) {
+
+    if (instance instanceof EntityShapeContext context
+        && context.getEntity() instanceof PlayerEntity player) {
+      return player.getMainHandStack().isIn(ModTags.SCAFFOLDING_ITEM);
+    }
+
+    return original.call(instance, item);
   }
 
   // -- COLLISION SHAPE -- //
@@ -120,7 +145,8 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
             + "This is probably due to a new Minecraft update, or another mod. Try updating to the "
             + "latest Panda's Blueprints version: "
             + "https://github.com/panda-hackerman/PandasBlueprintsFabric");
-    return ((ScaffoldingBlockDistanceHolder) Blocks.SCAFFOLDING).calculateScaffoldingDistance(world, pos);
+    return ((ScaffoldingBlockDistanceHolder) Blocks.SCAFFOLDING).calculateScaffoldingDistance(world,
+        pos);
   }
 
   @Redirect(method = "getPlacementState",

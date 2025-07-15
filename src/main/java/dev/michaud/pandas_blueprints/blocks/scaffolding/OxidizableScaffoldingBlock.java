@@ -1,8 +1,6 @@
 package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
-import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlockWithCustomSounds;
-import dev.michaud.pandas_blueprints.tags.ModTags;
 import eu.pb4.polymer.blocks.api.PolymerTexturedBlock;
 import eu.pb4.polymer.core.api.item.PolymerBlockItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
@@ -11,7 +9,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Oxidizable;
 import net.minecraft.block.ScaffoldingBlock;
-import net.minecraft.block.ShapeContext;
 import net.minecraft.block.Waterloggable;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.item.ItemPlacementContext;
@@ -19,18 +16,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager.Builder;
-import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
-import net.minecraft.state.property.Properties;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.WorldView;
-import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
 
@@ -83,8 +73,14 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
   }
 
   @Override
+  public OxidationLevel getDegradationLevel() {
+    return oxidationLevel;
+  }
+
+  @Override
   public BlockState getPolymerBlockState(BlockState state, PacketContext context) {
-    return OxidizableScaffoldingBlockModels.getPolymerBlockState(oxidationLevel, state.get(BOTTOM), state.get(WATERLOGGED));
+    return OxidizableScaffoldingBlockModels.getPolymerBlockState(oxidationLevel, state.get(BOTTOM),
+        state.get(WATERLOGGED));
   }
 
   @Override
@@ -108,30 +104,20 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
   }
 
   @Override
-  public OxidationLevel getDegradationLevel() {
-    return oxidationLevel;
-  }
-
-  @Override
   public Set<BlockState> getAllClientBlockStates() {
     return OxidizableScaffoldingBlockModels.ALL_STATES;
   }
 
   public static class OxidizableScaffoldingBlockItem extends PolymerBlockItem {
 
-    final String itemModelName;
-
     public OxidizableScaffoldingBlockItem(Block block, Settings settings) {
       super(block, settings, Items.SCAFFOLDING);
-
-      OxidationLevel level = ((Oxidizable) block).getDegradationLevel();
-      itemModelName = modelFromOxidation(level);
     }
 
     @Override
     public @Nullable Identifier getPolymerItemModel(ItemStack stack, PacketContext context) {
       if (PolymerResourcePackUtils.hasMainPack(context)) {
-        return Identifier.of(PandasBlueprints.GREENPANDA_ID, itemModelName);
+        return OxidizableScaffoldingBlockModels.getPolymerItemModel(getBlock());
       } else {
         return Identifier.ofVanilla("scaffolding");
       }
@@ -146,14 +132,6 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
     @Override
     protected boolean checkStatePlacement() {
       return false;
-    }
-
-    private static String modelFromOxidation(OxidationLevel level) {
-      if (level == OxidationLevel.UNAFFECTED) {
-        return "copper_scaffolding";
-      } else {
-        return level.asString() + "_copper_scaffolding";
-      }
     }
   }
 
