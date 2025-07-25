@@ -14,5 +14,14 @@
       "minecraft:ui/cartography_table/drawmap2",
       "minecraft:ui/cartography_table/drawmap3"
     ]
+  },
+  "hard_hat_block": {
+    "subtitle": "subtitles.item.hard_hat.block",
+    "sounds": [
+      "minecraft:item/shield/block1",
+      "minecraft:item/shield/block2",
+      "minecraft:item/shield/block3",
+      "minecraft:item/shield/block4"
+    ]
   }
 }

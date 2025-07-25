@@ -1,16 +1,20 @@
 package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
 import dev.michaud.pandas_blueprints.blocks.BlockWithCustomSounds;
+import dev.michaud.pandas_blueprints.damage.ModDamageTypes;
 import eu.pb4.polymer.blocks.api.PolymerTexturedBlock;
 import eu.pb4.polymer.core.api.item.PolymerBlockItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Falling;
 import net.minecraft.block.Oxidizable;
 import net.minecraft.block.ScaffoldingBlock;
 import net.minecraft.block.Waterloggable;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -20,12 +24,11 @@ import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
-import net.minecraft.util.shape.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
 
 public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements PolymerTexturedBlock,
-    Oxidizable, Waterloggable, ScaffoldingBlockDistanceHolder, BlockWithCustomSounds {
+    Oxidizable, Waterloggable, ScaffoldingBlockDistanceHolder, BlockWithCustomSounds, Falling {
 
   public static final int MAX_DISTANCE = 16;
   public static final IntProperty DISTANCE = IntProperty.of("distance", 0, MAX_DISTANCE);
@@ -55,11 +58,17 @@ public class OxidizableScaffoldingBlock extends ScaffoldingBlock implements Poly
         .with(BOTTOM, shouldBeBottom(world, pos, distance));
 
     if (blockState.get(getDistanceProperty()) >= getFallDistance()) {
-      var e = FallingBlockEntity.spawnFromBlock(world, pos, blockState);
-      e.dropItem = true;
+      FallingBlockEntity entity = FallingBlockEntity.spawnFromBlock(world, pos, blockState);
+      entity.setHurtEntities(0.5f, 6);
+      entity.dropItem = true;
     } else if (state != blockState) {
       world.setBlockState(pos, blockState, Block.NOTIFY_ALL);
     }
+  }
+
+  @Override
+  public DamageSource getDamageSource(Entity attacker) {
+    return attacker.getDamageSources().create(ModDamageTypes.FALLING_SCAFFOLDING, attacker);
   }
 
   @Override

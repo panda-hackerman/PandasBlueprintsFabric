@@ -11,6 +11,8 @@ import net.minecraft.util.Identifier;
 public class ModTags {
 
   public static final TagKey<Item> SCAFFOLDING_ITEM = ofItem("scaffolding");
+  public static final TagKey<Item> REPAIRS_HARD_HAT = ofItem("repairs_hard_hat");
+
   public static final TagKey<Block> SCAFFOLDING_BLOCK = ofBlock("scaffolding");
   public static final TagKey<Block> COPPER_SCAFFOLDING_BLOCK = ofBlock("copper_scaffolding");
   public static final TagKey<Block> CUSTOM_WAXABLE = ofBlock("waxable");

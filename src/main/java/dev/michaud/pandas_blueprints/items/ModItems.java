@@ -4,13 +4,23 @@ import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.BlueprintTableBlock.BlueprintTableItem;
 import dev.michaud.pandas_blueprints.blocks.ModBlocks;
 import dev.michaud.pandas_blueprints.blocks.scaffolding.OxidizableScaffoldingBlock.OxidizableScaffoldingBlockItem;
+import dev.michaud.pandas_blueprints.components.BlocksOverheadComponent;
+import dev.michaud.pandas_blueprints.components.BlocksOverheadComponent.DamageReduction;
+import dev.michaud.pandas_blueprints.components.BlocksOverheadComponent.ItemDamage;
+import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
 import dev.michaud.pandas_blueprints.items.wrench.WrenchDispenseBehavior;
+import dev.michaud.pandas_blueprints.sounds.ModSounds;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.DispenserBlock;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Item.Settings;
@@ -20,6 +30,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,6 +48,23 @@ public class ModItems {
           .maxCount(1)
           .maxDamage(384)
           .attributeModifiers(CopperWrenchItem.createAttributeModifiers()));
+
+  public static final Item HARD_HAT = register("hard_hat", HardHatItem::new,
+      new Item.Settings()
+          .repairable(Items.ARMADILLO_SCUTE)
+          .maxDamage(HardHatItem.MAX_DAMAGE)
+          .attributeModifiers(HardHatItem.createAttributeModifiers())
+          .enchantable(HardHatItem.ENCHANTABILITY_STAT)
+          .component(DataComponentTypes.EQUIPPABLE, EquippableComponent.builder(EquipmentSlot.HEAD)
+              .equipSound(SoundEvents.ITEM_ARMOR_EQUIP_GENERIC)
+              .build())
+          .component(ModComponentTypes.BLOCKS_OVERHEAD_ATTACKS,
+              new BlocksOverheadComponent(
+                  List.of(DamageReduction.DEFAULT),
+                  new ItemDamage(2, 1, 2),
+                  Optional.empty(),
+                  Optional.of(ModSounds.HARD_HAT_BLOCK)))
+  );
 
   public static final Item BLUEPRINT_TABLE = register(ModBlocks.BLUEPRINT_TABLE,
       BlueprintTableItem::new, new Item.Settings());

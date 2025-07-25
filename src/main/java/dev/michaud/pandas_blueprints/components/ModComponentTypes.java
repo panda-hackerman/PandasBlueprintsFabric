@@ -11,8 +11,10 @@ import net.minecraft.util.Identifier;
 
 public class ModComponentTypes {
 
-  public static final ComponentType<BlueprintIdComponent> BLUEPRINT_ID = register("blueprint_id",
-      BlueprintIdComponent.CODEC);
+  public static final ComponentType<BlueprintIdComponent> BLUEPRINT_ID = register(
+      "blueprint_id", BlueprintIdComponent.CODEC);
+  public static final ComponentType<BlocksOverheadComponent> BLOCKS_OVERHEAD_ATTACKS = register(
+      "blocks_overhead_attacks", BlocksOverheadComponent.CODEC);
 
   public static <T> ComponentType<T> register(String name, Codec<T> codec) {
     final Identifier id = Identifier.of(PandasBlueprints.MOD_ID, name);
@@ -22,7 +24,7 @@ public class ModComponentTypes {
   }
 
   public static void registerModComponents() {
-    PolymerComponent.registerDataComponent(BLUEPRINT_ID);
+    PolymerComponent.registerDataComponent(BLUEPRINT_ID, BLOCKS_OVERHEAD_ATTACKS);
     ComponentTooltipAppenderRegistry.addFirst(BLUEPRINT_ID);
   }
 
