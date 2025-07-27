@@ -9,6 +9,7 @@ import net.minecraft.util.Identifier;
 @SuppressWarnings("unused")
 public class ModBlockTags {
 
+  public static final TagKey<Block> BLUEPRINT_IGNORES = of("blueprint_ignores");
   public static final TagKey<Block> SCAFFOLDING = of("scaffolding");
   public static final TagKey<Block> COPPER_SCAFFOLDING = of("copper_scaffolding");
   public static final TagKey<Block> CUSTOM_WAXABLE = of("waxable");

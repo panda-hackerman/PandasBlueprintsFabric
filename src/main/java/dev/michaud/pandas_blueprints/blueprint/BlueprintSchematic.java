@@ -3,6 +3,7 @@ package dev.michaud.pandas_blueprints.blueprint;
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import dev.michaud.pandas_blueprints.tags.ModBlockTags;
 import dev.michaud.pandas_blueprints.util.BoxDetector;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -38,8 +39,8 @@ public class BlueprintSchematic {
   public static final int MIN_SUPPORTED_VERSION = NBT_VERSION;
 
   private final List<BlueprintBlockInfo> blockInfoList;
-  private final Map<Block, List<BlueprintBlockInfo>> blockToInfos = new HashMap<>();
   private final Vec3i size;
+  private final BlockPos offset;
 
   public static final Codec<BlueprintSchematic> CODEC = RecordCodecBuilder.create(
       instance -> instance.group(
@@ -48,9 +49,10 @@ public class BlueprintSchematic {
               .forGetter(schematic -> schematic.writeNbt(new NbtCompound()))
       ).apply(instance, BlueprintSchematic::readNbt));
 
-  protected BlueprintSchematic(List<BlueprintBlockInfo> blockInfoList, Vec3i size) {
+  protected BlueprintSchematic(List<BlueprintBlockInfo> blockInfoList, Vec3i size, BlockPos offset) {
     this.blockInfoList = blockInfoList;
     this.size = size;
+    this.offset = offset;
   }
 
   /**
@@ -76,9 +78,13 @@ public class BlueprintSchematic {
         continue;
       }
 
-      final BlockPos offsetPos = pos.subtract(tablePos).toImmutable();
-
       final BlockState state = world.getBlockState(pos);
+
+      if (state.isIn(ModBlockTags.BLUEPRINT_IGNORES)) {
+        continue;
+      }
+
+      final BlockPos offsetPos = pos.subtract(tablePos).toImmutable();
       final BlockEntity blockEntity = world.getBlockEntity(pos);
       final BlueprintBlockInfo blockInfo = BlueprintBlockInfo.of(world, offsetPos, state,
           blockEntity);
@@ -86,20 +92,22 @@ public class BlueprintSchematic {
       builder.add(blockInfo);
     }
 
-    return new BlueprintSchematic(builder.build(), BoxDetector.getSize(box));
+    final Vec3i size = BoxDetector.getSize(box);
+    final BlockPos offset = minCorner.subtract(tablePos);
+
+    return new BlueprintSchematic(builder.build(), size, offset);
   }
 
   public List<BlueprintBlockInfo> getAll() {
     return blockInfoList;
   }
 
-  public List<BlueprintBlockInfo> getAllOf(Block block) {
-    return blockToInfos.computeIfAbsent(block,
-        b -> blockInfoList.stream().filter(info -> info.state().isOf(b)).toList());
-  }
-
   public Vec3i getSize() {
     return size;
+  }
+
+  public BlockPos getOffset() {
+    return offset;
   }
 
   /**
@@ -120,8 +128,7 @@ public class BlueprintSchematic {
 
       final NbtCompound block = new NbtCompound();
 
-      final int[] infoPos = new int[]{blockInfo.pos.getX(), blockInfo.pos.getY(),
-          blockInfo.pos.getZ()};
+      final int[] infoPos = new int[]{blockInfo.pos.getX(), blockInfo.pos.getY(), blockInfo.pos.getZ()};
       final int infoStateId = palette.getIdOrCreate(blockInfo.state);
       final @Nullable NbtCompound infoNbt = blockInfo.nbt;
 
@@ -144,7 +151,9 @@ public class BlueprintSchematic {
 
     nbt.put("blocks", blocks);
     nbt.put("palette", paletteStates);
-    nbt.putIntArray("size", new int[]{size.getX(), size.getY(), size.getZ()});
+    nbt.put("size", Vec3i.CODEC, size);
+    nbt.put("offset", BlockPos.CODEC, offset);
+
     nbt.putInt("DataVersion", NBT_VERSION);
 
     return nbt;
@@ -214,12 +223,12 @@ public class BlueprintSchematic {
       builder.add(new BlueprintBlockInfo(blockPos, state, blockNbt));
     }
 
-    // Size
-    final int[] sizeArray = nbt.getIntArray("size")
+    final Vec3i size = nbt.get("size", Vec3i.CODEC)
         .orElseThrow(() -> new InvalidNbtException("Missing blueprint size"));
-    final Vec3i size = new Vec3i(sizeArray[0], sizeArray[1], sizeArray[2]);
+    final BlockPos offset = nbt.get("offset", BlockPos.CODEC)
+        .orElse(BlockPos.ORIGIN);
 
-    return new BlueprintSchematic(builder.build(), size);
+    return new BlueprintSchematic(builder.build(), size, offset);
   }
 
   /**

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "greenpanda:block/highlight_block"
+    }
+  }
+}
