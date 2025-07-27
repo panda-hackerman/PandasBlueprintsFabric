@@ -1,7 +1,6 @@
 {
   "replace": false,
   "values": [
-    "pandas_blueprints:copper_wrench",
     "pandas_blueprints:hard_hat"
   ]
 }

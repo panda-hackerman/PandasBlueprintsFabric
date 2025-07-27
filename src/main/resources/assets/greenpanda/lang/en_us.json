@@ -1,7 +1,8 @@
 {
+  "item.pandas_blueprints.copper_wrench": "Wrench",
   "item.pandas_blueprints.empty_blueprint": "Empty Blueprint",
   "item.pandas_blueprints.filled_blueprint": "Blueprint",
-  "item.pandas_blueprints.copper_wrench": "Wrench",
+  "item.pandas_blueprints.hard_hat": "Hard Hat",
   "block.pandas_blueprints.blueprint_table" : "Blueprint Table",
   "block.pandas_blueprints.copper_scaffolding": "Reinforced Scaffolding",
   "block.pandas_blueprints.exposed_copper_scaffolding": "Exposed Reinforced Scaffolding",
@@ -17,5 +18,10 @@
   "filled_blueprint.id": "ID: \"%s\"",
   "subtitles.block.blueprint_table.use": "Blueprint table used",
   "subtitles.item.wrench.use": "Wrench rotates",
-  "tag.item.greenpanda.scaffolding": "Scaffolding"
+  "subtitles.item.hard_hat.block": "Hard hat blocks",
+  "tag.item.greenpanda.hats": "Hats",
+  "tag.item.greenpanda.scaffolding": "Scaffolding",
+  "tag.item.greenpanda.repairs_hard_hat": "Repairs Hard Hat",
+  "death.attack.fallingScaffolding": "%1$s was squashed by loose scaffolding",
+  "death.attack.fallingScaffolding.player": "%1$s was squashed by loose scaffolding due to workplace incompetence by %2$s"
 }

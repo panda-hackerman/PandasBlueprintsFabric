@@ -1,0 +1,39 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": "head",
+        "model": {
+          "type": "minecraft:condition",
+          "property": "minecraft:has_component",
+          "component": "minecraft:dyed_color",
+          "on_false": {
+            "type": "minecraft:model",
+            "model": "greenpanda:hats/hard_hat"
+          },
+          "on_true": {
+            "type": "minecraft:model",
+            "model": "greenpanda:hats/hard_hat_tint",
+            "tints": [{ "type": "minecraft:dye", "default": 0 }]
+          }
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:condition",
+      "property": "minecraft:has_component",
+      "component": "minecraft:dyed_color",
+      "on_false": {
+        "type": "minecraft:model",
+        "model": "greenpanda:item/hard_hat"
+      },
+      "on_true": {
+        "type": "minecraft:model",
+        "model": "greenpanda:item/hard_hat_tint",
+        "tints": [{ "type": "minecraft:dye", "default": 0 }]
+      }
+    }
+  }
+}

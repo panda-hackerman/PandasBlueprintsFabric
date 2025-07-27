@@ -5,3 +5,5 @@ accessible class net/minecraft/server/MinecraftServer$ResourceManagerHolder
 accessible method net/minecraft/block/Block setDefaultState (Lnet/minecraft/block/BlockState;)V
 
 accessible method net/minecraft/block/ScaffoldingBlock shouldBeBottom (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;I)Z
+
+accessible method net/minecraft/entity/LivingEntity takeShieldHit (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/LivingEntity;)V

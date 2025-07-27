@@ -1,0 +1,46 @@
+{
+  "parent": "pandas_blueprints:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "pandas_blueprints:hard_hat"
+      }
+    },
+    "has_armadillo_scute": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "minecraft:armadillo_scute"
+          }
+        ]
+      }
+    },
+    "hit_by_falling_block": {
+      "trigger": "minecraft:entity_hurt_player",
+      "conditions": {
+        "damage": {
+          "blocked": false,
+          "type": {
+            "direct_entity": {
+              "type": "minecraft:falling_block"
+            }
+          }
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_armadillo_scute",
+      "hit_by_falling_block"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "pandas_blueprints:hard_hat"
+    ]
+  }
+}

@@ -7,7 +7,6 @@ import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.items.ModItems;
 import dev.michaud.pandas_blueprints.recipe.ModRecipeSerializers;
 import dev.michaud.pandas_blueprints.sounds.ModSounds;
-import dev.michaud.pandas_blueprints.tags.ModTags;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -31,7 +30,6 @@ public class PandasBlueprints implements ModInitializer {
     ModComponentTypes.registerModComponents();
     ModBlockEntityTypes.registerModBlockEntities();
     ModRecipeSerializers.registerModRecipeSerializers();
-    ModTags.registerModTags();
 
     PolymerResourcePackUtils.addModAssets(MOD_ID);
     PolymerResourcePackUtils.markAsRequired();
