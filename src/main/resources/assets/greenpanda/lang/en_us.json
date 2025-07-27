@@ -20,8 +20,9 @@
   "subtitles.item.wrench.use": "Wrench rotates",
   "subtitles.item.hard_hat.block": "Hard hat blocks",
   "tag.item.greenpanda.hats": "Hats",
+  "tag.item.greenpanda.copper_scaffolding": "Copper scaffolding",
   "tag.item.greenpanda.scaffolding": "Scaffolding",
-  "tag.item.greenpanda.repairs_hard_hat": "Repairs Hard Hat",
+  "tag.item.greenpanda.repairs_hard_hat": "Repairs hard hat",
   "death.attack.fallingScaffolding": "%1$s was squashed by loose scaffolding",
   "death.attack.fallingScaffolding.player": "%1$s was squashed by loose scaffolding due to workplace incompetence by %2$s"
 }

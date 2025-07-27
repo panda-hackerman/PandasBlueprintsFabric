@@ -4,7 +4,7 @@ import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import dev.michaud.pandas_blueprints.tags.ModTags;
+import dev.michaud.pandas_blueprints.tags.ModBlockTags;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.damage.FallLocation;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +23,7 @@ public abstract class MixinFallLocation {
   @ModifyExpressionValue(method = "fromBlockState", at = @At("MIXINEXTRAS:EXPRESSION"))
   private static boolean isStateScaffolding(boolean original,
       @Local(argsOnly = true) BlockState state) {
-    return original || state.isIn(ModTags.SCAFFOLDING_BLOCK);
+    return original || state.isIn(ModBlockTags.SCAFFOLDING);
   }
 
 }

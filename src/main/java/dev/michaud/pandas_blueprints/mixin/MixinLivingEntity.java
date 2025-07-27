@@ -9,7 +9,7 @@ import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import dev.michaud.pandas_blueprints.components.BlocksOverheadComponent;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
-import dev.michaud.pandas_blueprints.tags.ModTags;
+import dev.michaud.pandas_blueprints.tags.ModBlockTags;
 import net.minecraft.entity.Attackable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -42,7 +42,7 @@ public abstract class MixinLivingEntity extends Entity implements Attackable, Se
   @Expression("this.getBlockStateAtPos().isOf(SCAFFOLDING)")
   @ModifyExpressionValue(method = "applyClimbingSpeed", at = @At("MIXINEXTRAS:EXPRESSION"))
   private boolean getIsBlockStateAtPosScaffolding(boolean original) {
-    return original || getBlockStateAtPos().isIn(ModTags.SCAFFOLDING_BLOCK);
+    return original || getBlockStateAtPos().isIn(ModBlockTags.SCAFFOLDING);
   }
 
   /**

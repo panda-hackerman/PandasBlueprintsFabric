@@ -1,6 +1,6 @@
 package dev.michaud.pandas_blueprints.blocks.scaffolding;
 
-import dev.michaud.pandas_blueprints.tags.ModTags;
+import dev.michaud.pandas_blueprints.tags.ModBlockTags;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -18,7 +18,7 @@ public class ScaffoldingItemPlacementContextUtil {
     final World world = context.getWorld();
     BlockState blockState = world.getBlockState(blockPos);
 
-    if (!blockState.isIn(ModTags.SCAFFOLDING_BLOCK)) {
+    if (!blockState.isIn(ModBlockTags.SCAFFOLDING)) {
       return block.calculateScaffoldingDistance(world, blockPos) == block.getMaxDistance() ? null : context;
     }
 
@@ -45,7 +45,7 @@ public class ScaffoldingItemPlacementContextUtil {
       blockState = world.getBlockState(mutable);
 
       // Not scaffolding
-      if (!blockState.isIn(ModTags.SCAFFOLDING_BLOCK)) {
+      if (!blockState.isIn(ModBlockTags.SCAFFOLDING)) {
         if (blockState.canReplace(context)) {
           return ItemPlacementContext.offset(context, mutable, direction);
         }

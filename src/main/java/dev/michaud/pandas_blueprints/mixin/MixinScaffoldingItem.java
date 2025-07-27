@@ -1,8 +1,6 @@
 package dev.michaud.pandas_blueprints.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.sugar.Local;
-import dev.michaud.pandas_blueprints.tags.ModTags;
+import dev.michaud.pandas_blueprints.tags.ModBlockTags;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.BlockItem;
@@ -20,6 +18,6 @@ public abstract class MixinScaffoldingItem extends BlockItem {
 
   @Redirect(method = "getPlacementContext", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;isOf(Lnet/minecraft/block/Block;)Z"))
   private boolean blockIsScaffolding(BlockState state, Block block) {
-    return state.isIn(ModTags.SCAFFOLDING_BLOCK);
+    return state.isIn(ModBlockTags.SCAFFOLDING);
   }
 }

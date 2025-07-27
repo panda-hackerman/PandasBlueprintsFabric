@@ -5,7 +5,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.blocks.scaffolding.ScaffoldingBlockDistanceHolder;
-import dev.michaud.pandas_blueprints.tags.ModTags;
+import dev.michaud.pandas_blueprints.tags.ModBlockTags;
+import dev.michaud.pandas_blueprints.tags.ModItemTags;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -57,7 +58,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
   @Inject(method = "canReplace", at = @At("RETURN"), cancellable = true)
   private void canReplace(BlockState state, ItemPlacementContext context,
       CallbackInfoReturnable<Boolean> cir) {
-    cir.setReturnValue(context.getStack().isIn(ModTags.SCAFFOLDING_ITEM));
+    cir.setReturnValue(context.getStack().isIn(ModItemTags.SCAFFOLDING));
     cir.cancel();
   }
 
@@ -73,7 +74,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
 
     if (instance instanceof EntityShapeContext context
         && context.getEntity() instanceof PlayerEntity player) {
-      return player.getMainHandStack().isIn(ModTags.SCAFFOLDING_ITEM);
+      return player.getMainHandStack().isIn(ModItemTags.SCAFFOLDING);
     }
 
     return original.call(instance, item);
@@ -115,7 +116,7 @@ public abstract class MixinScaffoldingBlock extends Block implements Waterloggab
   private void shouldBeBottom(BlockView world, BlockPos pos, int distance,
       CallbackInfoReturnable<Boolean> cir) {
     cir.setReturnValue(
-        distance > 0 && !world.getBlockState(pos.down()).isIn(ModTags.SCAFFOLDING_BLOCK));
+        distance > 0 && !world.getBlockState(pos.down()).isIn(ModBlockTags.SCAFFOLDING));
     cir.cancel();
   }
 

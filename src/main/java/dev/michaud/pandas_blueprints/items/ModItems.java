@@ -11,7 +11,8 @@ import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.items.wrench.CopperWrenchItem;
 import dev.michaud.pandas_blueprints.items.wrench.WrenchDispenseBehavior;
 import dev.michaud.pandas_blueprints.sounds.ModSounds;
-import dev.michaud.pandas_blueprints.tags.ModTags;
+import dev.michaud.pandas_blueprints.tags.ModBlockTags;
+import dev.michaud.pandas_blueprints.tags.ModDamageTypeTags;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -63,7 +64,7 @@ public class ModItems {
               new BlocksOverheadComponent(
                   List.of(DamageReduction.DEFAULT),
                   new ItemDamage(2, 1, 2),
-                  Optional.of(ModTags.BYPASSES_HAT_HAT),
+                  Optional.of(ModDamageTypeTags.BYPASSES_HAT_HAT),
                   Optional.of(ModSounds.HARD_HAT_BLOCK)))
   );
 
