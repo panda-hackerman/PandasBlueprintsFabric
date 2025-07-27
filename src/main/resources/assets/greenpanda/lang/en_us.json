@@ -19,6 +19,7 @@
   "subtitles.block.blueprint_table.use": "Blueprint table used",
   "subtitles.item.wrench.use": "Wrench rotates",
   "subtitles.item.hard_hat.block": "Hard hat blocks",
+  "tag.item.greenpanda.hats": "Hats",
   "tag.item.greenpanda.scaffolding": "Scaffolding",
   "tag.item.greenpanda.repairs_hard_hat": "Repairs Hard Hat",
   "death.attack.fallingScaffolding": "%1$s was squashed by loose scaffolding",

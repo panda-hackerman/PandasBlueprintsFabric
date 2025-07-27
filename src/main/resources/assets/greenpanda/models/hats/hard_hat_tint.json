@@ -1,0 +1,6 @@
+{
+  "parent": "greenpanda:hats/hard_hat",
+  "textures": {
+    "hat": "greenpanda:hats/hard_hat_tint"
+  }
+}

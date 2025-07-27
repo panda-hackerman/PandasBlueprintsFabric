@@ -4,15 +4,12 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
 import java.util.Optional;
-import net.minecraft.component.type.BlocksAttacksComponent.DamageReduction;
-import net.minecraft.component.type.BlocksAttacksComponent.ItemDamage;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageType;
-import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
@@ -98,7 +95,8 @@ public record BlocksOverheadComponent(List<DamageReduction> damageReductions,
     final float blockedAmount = component.getReductionAmountFromSource(source, amount, angleRad);
     component.onItemHit(world, headItem, entity, EquipmentSlot.HEAD, blockedAmount);
 
-    if (!source.isIn(DamageTypeTags.IS_PROJECTILE) && sourceEntity instanceof LivingEntity attacker) {
+    if (!source.isIn(DamageTypeTags.IS_PROJECTILE)
+        && sourceEntity instanceof LivingEntity attacker) {
       entity.takeShieldHit(world, attacker);
     }
 
