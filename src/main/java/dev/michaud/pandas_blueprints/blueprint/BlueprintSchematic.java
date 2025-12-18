@@ -1,6 +1,7 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.michaud.pandas_blueprints.tags.ModBlockTags;
@@ -238,8 +239,7 @@ public class BlueprintSchematic {
    * @param state The block state
    * @param nbt   The block's nbt, if any.
    */
-  public record BlueprintBlockInfo(@NotNull BlockPos pos, @NotNull BlockState state,
-                                   @Nullable NbtCompound nbt) {
+  public record BlueprintBlockInfo(@NotNull BlockPos pos, @NotNull BlockState state, @Nullable NbtCompound nbt) {
 
     @Contract(value = "_, _, _, _ -> new", pure = true)
     public static @NotNull BlueprintBlockInfo of(@NotNull World world, @NotNull BlockPos pos,

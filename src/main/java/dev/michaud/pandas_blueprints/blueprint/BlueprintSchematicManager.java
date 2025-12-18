@@ -1,9 +1,15 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
+import java.util.List;
+import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -77,6 +83,10 @@ public class BlueprintSchematicManager extends PersistentState {
     }
 
     return Optional.empty();
+  }
+
+  public List<Identifier> getAllSchematicIds() {
+    return ImmutableList.sortedCopyOf(schematicMap.keySet());
   }
 
   /**
