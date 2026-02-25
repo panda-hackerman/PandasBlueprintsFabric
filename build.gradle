@@ -84,9 +84,9 @@ jar {
     }
 }
 
-//test {
-//    useJUnitPlatform()
-//}
+test {
+    useJUnitPlatform()
+}
 
 loom {
     accessWidenerPath = file("src/main/resources/pandas_blueprints.accesswidener")
