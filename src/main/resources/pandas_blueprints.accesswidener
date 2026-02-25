@@ -7,3 +7,11 @@ accessible method net/minecraft/block/Block setDefaultState (Lnet/minecraft/bloc
 accessible method net/minecraft/block/ScaffoldingBlock shouldBeBottom (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;I)Z
 
 accessible method net/minecraft/entity/LivingEntity takeShieldHit (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/LivingEntity;)V
+
+accessible field net/minecraft/util/collection/IdList idMap Lit/unimi/dsi/fastutil/objects/Reference2IntMap;
+
+accessible field net/minecraft/util/collection/IdList list Ljava/util/List;
+
+extendable method net/minecraft/util/collection/IdList get (I)Ljava/lang/Object;
+
+accessible method net/minecraft/world/PersistentStateManager getFile (Ljava/lang/String;)Ljava/nio/file/Path;

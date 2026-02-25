@@ -16,6 +16,8 @@ import org.jetbrains.annotations.Nullable;
 
 public record BlueprintIdComponent(Identifier id) implements TooltipAppender {
 
+  public static final BlueprintIdComponent EMPTY = new BlueprintIdComponent(null);
+
   public static final Codec<BlueprintIdComponent> CODEC = Identifier.CODEC.xmap(
       BlueprintIdComponent::new,
       BlueprintIdComponent::id

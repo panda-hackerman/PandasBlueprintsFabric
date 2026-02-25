@@ -3,6 +3,7 @@ package dev.michaud.pandas_blueprints;
 import dev.michaud.pandas_blueprints.blocks.ModBlocks;
 import dev.michaud.pandas_blueprints.blocks.entity.ModBlockEntityTypes;
 import dev.michaud.pandas_blueprints.blocks.scaffolding.OxidizableScaffoldingBlockModels;
+import dev.michaud.pandas_blueprints.commands.ModCommands;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.items.ModItems;
 import dev.michaud.pandas_blueprints.recipe.ModRecipeSerializers;
@@ -33,6 +34,8 @@ public class PandasBlueprints implements ModInitializer {
 
     PolymerResourcePackUtils.addModAssets(MOD_ID);
     PolymerResourcePackUtils.markAsRequired();
+
+    ModCommands.registerModCommands();
 
     LOGGER.info("Panda's Blueprints initialized");
   }

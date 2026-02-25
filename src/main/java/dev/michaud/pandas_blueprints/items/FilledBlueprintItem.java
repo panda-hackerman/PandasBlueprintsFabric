@@ -1,28 +1,49 @@
 package dev.michaud.pandas_blueprints.items;
 
+import com.google.common.collect.ImmutableList;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
+import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic;
+import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematicManager;
 import dev.michaud.pandas_blueprints.components.BlueprintIdComponent;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import eu.pb4.polymer.core.api.item.PolymerItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
-import java.text.Normalizer.Form;
+import java.net.URI;
+import java.util.Comparator;
 import java.util.List;
-import java.util.function.Consumer;
-import net.minecraft.component.type.TooltipDisplayComponent;
+import java.util.Optional;
+import net.minecraft.dialog.AfterAction;
+import net.minecraft.dialog.DialogActionButtonData;
+import net.minecraft.dialog.DialogButtonData;
+import net.minecraft.dialog.DialogCommonData;
+import net.minecraft.dialog.action.DialogAction;
+import net.minecraft.dialog.action.SimpleDialogAction;
+import net.minecraft.dialog.body.DialogBody;
+import net.minecraft.dialog.body.ItemDialogBody;
+import net.minecraft.dialog.body.PlainMessageDialogBody;
+import net.minecraft.dialog.type.Dialog;
+import net.minecraft.dialog.type.MultiActionDialog;
+import net.minecraft.dialog.type.NoticeDialog;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.item.tooltip.TooltipAppender;
-import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.screen.ScreenTexts;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.ClickEvent;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.packettweaker.PacketContext;
 
 /**
  * A blueprint that has an associated schematic
+ *
  * @see EmptyBlueprintItem
  */
 public class FilledBlueprintItem extends Item implements PolymerItem {
@@ -32,11 +53,73 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
   }
 
   public static ItemStack createBlueprint(Identifier id, PlayerEntity author) {
-
     final ItemStack itemStack = new ItemStack(ModItems.FILLED_BLUEPRINT);
     itemStack.set(ModComponentTypes.BLUEPRINT_ID, new BlueprintIdComponent(id));
 
     return itemStack;
+  }
+
+  @Override
+  public ActionResult use(World world, PlayerEntity player, Hand hand) {
+    final ItemStack itemStack = player.getStackInHand(hand);
+
+    if (!(player instanceof ServerPlayerEntity serverPlayer)) {
+      return ActionResult.PASS;
+    }
+
+    final BlueprintIdComponent blueprintId = itemStack.get(ModComponentTypes.BLUEPRINT_ID);
+    final BlueprintSchematicManager manager = BlueprintSchematicManager.getInstance(
+        serverPlayer.getWorld());
+
+    if (blueprintId == null) {
+      return ActionResult.PASS; //Can't open material list on non-blueprint item!
+    }
+
+    manager.getSchematic(blueprintId.id()).ifPresent(blueprint -> {
+      showMaterialList(blueprintId.id(), blueprint, serverPlayer);
+    });
+
+    return ActionResult.SUCCESS;
+  }
+
+  //TODO: Translation
+  protected static void showMaterialList(Identifier id, BlueprintSchematic blueprint, ServerPlayerEntity player) {
+
+    final List<DialogBody> materialList = blueprint.getAllBlocks().stream()
+        .sorted(Comparator.comparingInt(blueprint::getCount).reversed()
+            .thenComparing(b -> Registries.BLOCK.getId(b).getPath(), String::compareToIgnoreCase)
+            .thenComparing(b -> Registries.BLOCK.getId(b).getNamespace(), String::compareToIgnoreCase))
+        .map(block -> {
+          final ItemStack item = block.asItem().getDefaultStack();
+          final int count = blueprint.getCount(block);
+
+          return new ItemDialogBody(item, Optional.of(
+              new PlainMessageDialogBody(item.getItemName().copyContentOnly().append(" x" + count),
+                  200)), true, true, 16, 16);
+        }).collect(ImmutableList.toImmutableList());
+
+    final Dialog dialog = new NoticeDialog(
+        new DialogCommonData(
+            Text.literal("Material list for blueprint \"" + id + "\""),
+            Optional.empty(),
+            true,
+            false,
+            AfterAction.CLOSE,
+            materialList,
+            List.of()
+        ),
+        new DialogActionButtonData(new DialogButtonData(ScreenTexts.DONE, 150), Optional.empty())
+    );
+
+    final RegistryEntry<Dialog> entry = RegistryEntry.of(dialog);
+    player.openDialog(entry);
+  }
+
+  @Override
+  public ItemStack getDefaultStack() {
+    final ItemStack stack = super.getDefaultStack();
+    stack.set(ModComponentTypes.BLUEPRINT_ID, BlueprintIdComponent.EMPTY);
+    return stack;
   }
 
   @Override
