@@ -1,0 +1,47 @@
+{
+  "display": {
+    "icon": {
+      "id": "pandas_blueprints:blueprint_table",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.blueprint.root.title"
+    },
+    "description": {
+      "translate": "advancements.blueprint.root.description"
+    },
+    "background": "minecraft:gui/advancements/backgrounds/stone",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "got_item": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "pandas_blueprints:empty_blueprint",
+              "pandas_blueprints:filled_blueprint",
+              "pandas_blueprints:copper_wrench",
+              "pandas_blueprints:copper_scaffolding",
+              "pandas_blueprints:exposed_copper_scaffolding",
+              "pandas_blueprints:weathered_copper_scaffolding",
+              "pandas_blueprints:oxidized_copper_scaffolding",
+              "pandas_blueprints:waxed_copper_scaffolding",
+              "pandas_blueprints:waxed_exposed_copper_scaffolding",
+              "pandas_blueprints:waxed_weathered_copper_scaffolding",
+              "pandas_blueprints:waxed_oxidized_copper_scaffolding",
+              "pandas_blueprints:hard_hat"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "got_item"
+    ]
+  ]
+}
