@@ -10,7 +10,7 @@
     "description": {
       "translate": "advancements.blueprint.falling_scaffolding.description"
     },
-    "hidden": false
+    "hidden": true
   },
   "parent": "pandas_blueprints:blueprints/root",
   "criteria": {

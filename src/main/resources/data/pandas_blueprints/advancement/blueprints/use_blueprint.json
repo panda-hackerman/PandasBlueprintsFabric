@@ -25,10 +25,7 @@
           },
           {
             "condition": "minecraft:block_state_property",
-            "block": "pandas_blueprints:blueprint_table",
-            "properties": {
-              "has_blueprint": "false"
-            }
+            "block": "pandas_blueprints:blueprint_table"
           }
         ]
       }

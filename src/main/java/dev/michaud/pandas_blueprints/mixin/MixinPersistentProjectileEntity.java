@@ -34,7 +34,7 @@ public abstract class MixinPersistentProjectileEntity extends ProjectileEntity {
       return;
     }
 
-    PandasBlueprints.LOGGER.info("Deflected!!!");
+//    PandasBlueprints.LOGGER.info("Deflected!!!");
 
     world.getChunkManager().sendToOtherNearbyPlayers(this, new EntityVelocityUpdateS2CPacket(this));
 
