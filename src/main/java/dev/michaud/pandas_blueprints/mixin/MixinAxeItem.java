@@ -26,8 +26,8 @@ public abstract class MixinAxeItem extends Item {
     super(settings);
   }
 
-  @ModifyArg(method = "tryStrip", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;syncWorldEvent(Lnet/minecraft/entity/Entity;ILnet/minecraft/util/math/BlockPos;I)V"))
-  private Entity broadcastParticlesToPlayer(Entity entity, @Local(argsOnly = true) BlockState state) {
+  @ModifyArg(method = "strip", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;syncWorldEvent(Lnet/minecraft/entity/Entity;ILnet/minecraft/util/math/BlockPos;I)V"))
+  private static Entity broadcastParticles(Entity entity, @Local(argsOnly = true) BlockState state) {
     if (state.isIn(ModBlockTags.CUSTOM_WAXABLE) || state.isIn(ModBlockTags.CUSTOM_WAXED)) {
       return null;
     } else {
@@ -35,8 +35,8 @@ public abstract class MixinAxeItem extends Item {
     }
   }
 
-  @ModifyArg(method = "tryStrip", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playSound(Lnet/minecraft/entity/Entity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/sound/SoundEvent;Lnet/minecraft/sound/SoundCategory;FF)V"))
-  private Entity broadcastSoundToPlayer(Entity entity, @Local(argsOnly = true) BlockState state) {
+  @ModifyArg(method = "strip", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;playSound(Lnet/minecraft/entity/Entity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/sound/SoundEvent;Lnet/minecraft/sound/SoundCategory;FF)V"))
+  private static Entity broadcastSoundToPlayer(Entity entity, @Local(argsOnly = true) BlockState state) {
     if (state.isIn(ModBlockTags.CUSTOM_WAXABLE) || state.isIn(ModBlockTags.CUSTOM_WAXED)) {
       return null;
     } else {

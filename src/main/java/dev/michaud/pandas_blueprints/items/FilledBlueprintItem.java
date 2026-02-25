@@ -66,7 +66,7 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
 
     final BlueprintIdComponent blueprintId = itemStack.get(ModComponentTypes.BLUEPRINT_ID);
     final BlueprintSchematicManager manager = BlueprintSchematicManager.getInstance(
-        serverPlayer.getWorld());
+        serverPlayer.getEntityWorld());
 
     if (blueprintId == null) {
       return ActionResult.PASS; //Can't open material list on non-blueprint item!

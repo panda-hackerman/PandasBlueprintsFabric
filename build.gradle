@@ -25,7 +25,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Polymer :3
-    def polymer_version = '0.13.13+1.21.8'
+    def polymer_version = '0.14.4+1.21.10'
     modImplementation include("eu.pb4:polymer-core:${polymer_version}")
     modImplementation include("eu.pb4:polymer-resource-pack:${polymer_version}")
     modImplementation include("eu.pb4:polymer-blocks:${polymer_version}")
@@ -33,7 +33,7 @@ dependencies {
     modImplementation include("eu.pb4:polymer-sound-patcher:${polymer_version}")
 
     // Mixin extras
-    include(implementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.5.0-rc.4")))
+    include(implementation(annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.5.3")))
 
     // For resource pack hosting
     modRuntimeOnly "eu.pb4:polymer-autohost:${polymer_version}"

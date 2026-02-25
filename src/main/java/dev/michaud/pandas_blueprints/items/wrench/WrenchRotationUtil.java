@@ -156,6 +156,6 @@ public class WrenchRotationUtil {
     float yaw = entity.getYaw();
     yaw += (clockwise ? 45 : -45);
 
-    entity.refreshPositionAndAngles(entity.getPos(), yaw, entity.getPitch());
+    entity.refreshPositionAndAngles(entity.getEntityPos(), yaw, entity.getPitch());
   }
 }

@@ -35,7 +35,7 @@ public class ScaffoldingItemPlacementContextUtil {
     while (i < block.getMaxDistance()) {
 
       // Too high
-      if (!world.isClient && !world.isInBuildLimit(mutable)) {
+      if (!world.isClient() && !world.isInBuildLimit(mutable)) {
         if (mutable.getY() > world.getTopYInclusive() && context.getPlayer() instanceof ServerPlayerEntity serverPlayer) {
           serverPlayer.sendMessageToClient(Text.translatable("build.tooHigh", world.getTopYInclusive()).formatted(Formatting.RED), true);
         }

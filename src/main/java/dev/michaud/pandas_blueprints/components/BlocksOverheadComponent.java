@@ -72,7 +72,7 @@ public record BlocksOverheadComponent(List<DamageReduction> damageReductions,
 
     final double angleRad; // Angle in radians
     final Entity sourceEntity = source.getSource();
-    final Vec3d entityPos = entity.getPos();
+    final Vec3d entityPos = entity.getEntityPos();
     final Vec3d sourcePos = source.getPosition();
 
     if (sourceEntity instanceof FallingBlockEntity

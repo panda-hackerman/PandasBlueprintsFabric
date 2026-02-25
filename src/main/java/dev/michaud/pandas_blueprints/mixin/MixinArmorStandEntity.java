@@ -52,7 +52,7 @@ public abstract class MixinArmorStandEntity extends LivingEntity {
         && itemStack.getItem() instanceof CopperWrenchItem) {
 
       final boolean shift = player.isSneaking();
-      final World world = getWorld();
+      final World world = getEntityWorld();
       final BlockPos pos = getBlockPos();
 
       // Rotate
@@ -60,7 +60,7 @@ public abstract class MixinArmorStandEntity extends LivingEntity {
       world.playSound(null, pos, ModSounds.COPPER_WRENCH_USE, SoundCategory.BLOCKS, 1f, 1f);
 
       // Damage Item
-      final EquipmentSlot slot = LivingEntity.getSlotForHand(hand);
+      final EquipmentSlot slot = hand.getEquipmentSlot();
       itemStack.damage(1, player, slot);
 
       cir.setReturnValue(ActionResult.SUCCESS);

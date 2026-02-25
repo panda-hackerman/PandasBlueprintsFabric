@@ -310,9 +310,9 @@ public class BlueprintTableBlock extends BlockWithEntity implements PolymerTextu
   }
 
   @Override
-  protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+  protected int getComparatorOutput(BlockState state, World world, BlockPos pos, Direction direction) {
     if (world.getBlockEntity(pos) instanceof BlueprintTableBlockEntity blockEntity) {
-      return blockEntity.hasBlueprint() ? 15 : 0;
+      return blockEntity.hasBlueprint() ? 15 : 0; //TODO: Based on blueprint completeness
     } else {
       return 0;
     }

@@ -6,7 +6,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.HoneycombItem;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.SignChangingItem;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
@@ -28,7 +31,11 @@ public abstract class MixinHoneycombItem extends Item implements SignChangingIte
   }
 
   @ModifyArg(method = "method_34719", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;syncWorldEvent(Lnet/minecraft/entity/Entity;ILnet/minecraft/util/math/BlockPos;I)V"))
-  private static Entity broadcastToPlayer(Entity entity, @Local(argsOnly = true) BlockState state) {
+  private static Entity broadcastToPlayer(Entity entity, @Local(argsOnly = true) ItemUsageContext context) {
+    World world = context.getWorld();
+    BlockPos blockPos = context.getBlockPos();
+    BlockState state = world.getBlockState(blockPos);
+
     if (state.isIn(ModBlockTags.CUSTOM_WAXABLE) || state.isIn(ModBlockTags.CUSTOM_WAXED)) {
       return null;
     } else {

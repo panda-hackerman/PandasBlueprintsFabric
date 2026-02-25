@@ -30,7 +30,7 @@ public abstract class MixinPersistentProjectileEntity extends ProjectileEntity {
           target = "Lnet/minecraft/entity/projectile/PersistentProjectileEntity;setVelocity(Lnet/minecraft/util/math/Vec3d;)V"))
   private void inject(EntityHitResult entityHitResult, CallbackInfo ci) {
 
-    if (!(getWorld() instanceof ServerWorld world)) {
+    if (!(getEntityWorld() instanceof ServerWorld world)) {
       return;
     }
 

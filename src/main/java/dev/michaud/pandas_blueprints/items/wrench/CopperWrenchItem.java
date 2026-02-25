@@ -89,7 +89,7 @@ public class CopperWrenchItem extends Item implements PolymerItem {
 
       // Damage item
       final ItemStack stack = context.getStack();
-      final EquipmentSlot slot = LivingEntity.getSlotForHand(context.getHand());
+      final EquipmentSlot slot = context.getHand().getEquipmentSlot();
       stack.damage(1, player, slot);
 
       return ActionResult.SUCCESS;

@@ -11,8 +11,6 @@ import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.components.BlocksOverheadComponent;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.tags.ModBlockTags;
-import net.minecraft.advancement.Advancement;
-import net.minecraft.command.argument.RegistryKeyArgumentType;
 import net.minecraft.entity.Attackable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -20,8 +18,6 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -79,14 +75,15 @@ public abstract class MixinLivingEntity extends Entity implements Attackable, Se
 //    return !(bl || blockedAboveRef.get()) || amount > 0f;
 //  }
 
-  @Definition(id = "getActiveItem", method = "Lnet/minecraft/entity/LivingEntity;getActiveItem()Lnet/minecraft/item/ItemStack;")
+  @Definition(id = "itemStack", local = @Local(type = ItemStack.class))
   @Definition(id = "BLOCKS_ATTACKS", field = "Lnet/minecraft/component/DataComponentTypes;BLOCKS_ATTACKS:Lnet/minecraft/component/ComponentType;")
   @Definition(id = "get", method = "Lnet/minecraft/item/ItemStack;get(Lnet/minecraft/component/ComponentType;)Ljava/lang/Object;")
-  @Expression("this.getActiveItem().get(BLOCKS_ATTACKS)")
+  @Expression("itemStack.get(BLOCKS_ATTACKS)")
   @Inject(method = "damage", at = @At(value = "MIXINEXTRAS:EXPRESSION"))
   private void modifyBlockedBool(ServerWorld world, DamageSource source, float amount,
       CallbackInfoReturnable<Boolean> cir, @Local(ordinal = 0) LocalBooleanRef bl,
       @Share("blockedAbove") LocalBooleanRef blockedAboveRef) {
+    // Set bl to true if it was already, OR if we blocked from above
     bl.set(bl.get() || blockedAboveRef.get());
   }
 
@@ -108,8 +105,10 @@ public abstract class MixinLivingEntity extends Entity implements Attackable, Se
 
       // Grant advancement
       if (thisEntity instanceof ServerPlayerEntity playerEntity) {
+        //TODO: There's for sure a better way to do this...
         var advancementId = Identifier.of(PandasBlueprints.MOD_ID, "blueprints/deflect_above");
-        var advancement = playerEntity.getServer().getAdvancementLoader().get(advancementId);
+        var advancement = playerEntity.getEntityWorld().getServer().getAdvancementLoader()
+            .get(advancementId);
         playerEntity.getAdvancementTracker().grantCriterion(advancement, "impossible");
       }
 
