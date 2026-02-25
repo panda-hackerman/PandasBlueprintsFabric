@@ -7,9 +7,12 @@ import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
+import dev.michaud.pandas_blueprints.PandasBlueprints;
 import dev.michaud.pandas_blueprints.components.BlocksOverheadComponent;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
 import dev.michaud.pandas_blueprints.tags.ModBlockTags;
+import net.minecraft.advancement.Advancement;
+import net.minecraft.command.argument.RegistryKeyArgumentType;
 import net.minecraft.entity.Attackable;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -17,7 +20,11 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import net.minecraft.world.waypoint.ServerWaypoint;
 import org.spongepowered.asm.mixin.Mixin;
@@ -98,6 +105,14 @@ public abstract class MixinLivingEntity extends Entity implements Attackable, Se
 
     if (blockedAboveRef.get() && component != null) {
       component.playBlockSound(world, thisEntity);
+
+      // Grant advancement
+      if (thisEntity instanceof ServerPlayerEntity playerEntity) {
+        var advancementId = Identifier.of(PandasBlueprints.MOD_ID, "blueprints/deflect_above");
+        var advancement = playerEntity.getServer().getAdvancementLoader().get(advancementId);
+        playerEntity.getAdvancementTracker().grantCriterion(advancement, "impossible");
+      }
+
       return false; // Don't send damage
     }
 

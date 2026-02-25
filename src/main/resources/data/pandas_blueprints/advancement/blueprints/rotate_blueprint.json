@@ -1,0 +1,42 @@
+{
+  "display": {
+    "icon": {
+      "id": "pandas_blueprints:copper_wrench",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.blueprint.rotate_blueprint.title"
+    },
+    "description": {
+      "translate": "advancements.blueprint.rotate_blueprint.description"
+    }
+  },
+  "parent": "pandas_blueprints:blueprints/use_blueprint",
+  "criteria": {
+    "use_wrench": {
+      "trigger": "minecraft:item_used_on_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "items": "pandas_blueprints:copper_wrench"
+            }
+          },
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "pandas_blueprints:blueprint_table",
+            "properties": {
+              "has_blueprint": "true"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "use_wrench"
+    ]
+  ]
+}

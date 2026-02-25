@@ -1,0 +1,39 @@
+{
+  "display": {
+    "icon": {
+      "id": "pandas_blueprints:filled_blueprint",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.blueprint.use_blueprint.title"
+    },
+    "description": {
+      "translate": "advancements.blueprint.use_blueprint.description"
+    }
+  },
+  "parent": "pandas_blueprints:blueprints/fill_blueprint",
+  "criteria": {
+    "use_blueprint": {
+      "trigger": "minecraft:item_used_on_block",
+      "conditions": {
+        "location": [
+          {
+            "condition": "minecraft:match_tool",
+            "predicate": {
+              "items": "pandas_blueprints:filled_blueprint"
+            }
+          },
+          {
+            "condition": "minecraft:block_state_property",
+            "block": "pandas_blueprints:blueprint_table"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "use_blueprint"
+    ]
+  ]
+}

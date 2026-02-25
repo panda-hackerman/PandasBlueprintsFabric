@@ -1,0 +1,25 @@
+{
+  "display": {
+    "icon": {
+      "id": "pandas_blueprints:hard_hat",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.blueprint.deflect_above.title"
+    },
+    "description": {
+      "translate": "advancements.blueprint.deflect_above.description"
+    }
+  },
+  "parent": "pandas_blueprints:blueprints/root",
+  "criteria": {
+    "impossible": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "impossible"
+    ]
+  ]
+}

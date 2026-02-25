@@ -1,0 +1,39 @@
+{
+  "display": {
+    "icon": {
+      "id": "pandas_blueprints:copper_scaffolding",
+      "count": 1
+    },
+    "title": {
+      "translate": "advancements.blueprint.falling_scaffolding.title"
+    },
+    "description": {
+      "translate": "advancements.blueprint.falling_scaffolding.description"
+    },
+    "hidden": true
+  },
+  "parent": "pandas_blueprints:blueprints/root",
+  "criteria": {
+    "get_hit": {
+      "trigger": "minecraft:entity_hurt_player",
+      "conditions": {
+        "damage": {
+          "blocked": false,
+          "type": {
+            "tags": [
+              {
+                "id": "greenpanda:falling_scaffolding",
+                "expected": true
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "get_hit"
+    ]
+  ]
+}
