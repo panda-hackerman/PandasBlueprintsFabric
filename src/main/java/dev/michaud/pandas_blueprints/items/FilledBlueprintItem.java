@@ -6,23 +6,21 @@ import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic;
 import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematicManager;
 import dev.michaud.pandas_blueprints.components.BlueprintIdComponent;
 import dev.michaud.pandas_blueprints.components.ModComponentTypes;
+import dev.michaud.pandas_blueprints.util.MaterialListUtil;
 import eu.pb4.polymer.core.api.item.PolymerItem;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
-import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import net.minecraft.dialog.AfterAction;
 import net.minecraft.dialog.DialogActionButtonData;
 import net.minecraft.dialog.DialogButtonData;
 import net.minecraft.dialog.DialogCommonData;
-import net.minecraft.dialog.action.DialogAction;
-import net.minecraft.dialog.action.SimpleDialogAction;
 import net.minecraft.dialog.body.DialogBody;
 import net.minecraft.dialog.body.ItemDialogBody;
 import net.minecraft.dialog.body.PlainMessageDialogBody;
 import net.minecraft.dialog.type.Dialog;
-import net.minecraft.dialog.type.MultiActionDialog;
 import net.minecraft.dialog.type.NoticeDialog;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -32,7 +30,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -83,20 +80,20 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
   }
 
   //TODO: Translation
-  protected static void showMaterialList(Identifier id, BlueprintSchematic blueprint, ServerPlayerEntity player) {
+  protected static void showMaterialList(Identifier id, BlueprintSchematic blueprint,
+      ServerPlayerEntity player) {
 
-    final List<DialogBody> materialList = blueprint.getAllBlocks().stream()
-        .sorted(Comparator.comparingInt(blueprint::getCount).reversed()
-            .thenComparing(b -> Registries.BLOCK.getId(b).getPath(), String::compareToIgnoreCase)
-            .thenComparing(b -> Registries.BLOCK.getId(b).getNamespace(), String::compareToIgnoreCase))
-        .map(block -> {
-          final ItemStack item = block.asItem().getDefaultStack();
-          final int count = blueprint.getCount(block);
+    ImmutableList.Builder<DialogBody> materialListBuilder = ImmutableList.builder();
 
-          return new ItemDialogBody(item, Optional.of(
-              new PlainMessageDialogBody(item.getItemName().copyContentOnly().append(" x" + count),
-                  200)), true, true, 16, 16);
-        }).collect(ImmutableList.toImmutableList());
+    for (Map.Entry<ItemStack, Integer> entry : MaterialListUtil.getMaterialsList(blueprint)
+        .entrySet()) {
+      final ItemStack item = entry.getKey();
+      final int count = entry.getValue();
+
+      materialListBuilder.add(new ItemDialogBody(item, Optional.of(
+          new PlainMessageDialogBody(item.getItemName().copyContentOnly().append(" x" + count),
+              200)), true, true, 16, 16));
+    }
 
     final Dialog dialog = new NoticeDialog(
         new DialogCommonData(
@@ -105,7 +102,7 @@ public class FilledBlueprintItem extends Item implements PolymerItem {
             true,
             false,
             AfterAction.CLOSE,
-            materialList,
+            materialListBuilder.build(),
             List.of()
         ),
         new DialogActionButtonData(new DialogButtonData(ScreenTexts.DONE, 150), Optional.empty())
