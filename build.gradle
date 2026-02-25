@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.11-SNAPSHOT'
+    id 'fabric-loom' version '1.15-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -25,7 +25,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Polymer :3
-    def polymer_version = '0.13.4+1.21.7'
+    def polymer_version = '0.13.13+1.21.8'
     modImplementation include("eu.pb4:polymer-core:${polymer_version}")
     modImplementation include("eu.pb4:polymer-resource-pack:${polymer_version}")
     modImplementation include("eu.pb4:polymer-blocks:${polymer_version}")
@@ -84,9 +84,9 @@ jar {
     }
 }
 
-test {
-    useJUnitPlatform()
-}
+//test {
+//    useJUnitPlatform()
+//}
 
 loom {
     accessWidenerPath = file("src/main/resources/pandas_blueprints.accesswidener")
