@@ -8,13 +8,13 @@ import dev.michaud.pandas_blueprints.util.RotationHelper;
 import eu.pb4.polymer.core.api.block.PolymerBlock;
 import eu.pb4.polymer.virtualentity.api.elements.BlockDisplayElement;
 import java.util.List;
+import net.minecraft.block.AbstractChestBlock;
 import net.minecraft.block.BannerBlock;
 import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.ChestBlock;
 import net.minecraft.block.HangingSignBlock;
 import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.SignBlock;
@@ -36,21 +36,23 @@ public class BlueprintBlockDisplay extends BlockDisplayElement {
    */
   private static final List<Class<? extends BlockEntityProvider>> BROKEN_BLOCK_DISPLAY_CLASSES =
       ImmutableList.copyOf(List.of(
-          BedBlock.class, ChestBlock.class, WallSkullBlock.class, WallSignBlock.class,
+          BedBlock.class, AbstractChestBlock.class, WallSkullBlock.class, WallSignBlock.class,
           WallHangingSignBlock.class, WallBannerBlock.class, SkullBlock.class, SignBlock.class,
           HangingSignBlock.class, BannerBlock.class, ShulkerBoxBlock.class));
 
   public final boolean useCustomTransformation;
   public final BlueprintBlockInfo blockInfo;
+  public final BlockPos tableOffset;
 
   private BlockStateMatch match = BlockStateMatch.NO_BLOCK_MATCH;
   private BlockRotation rotation = BlockRotation.NONE; // Rotation around the table pos
 
-  public BlueprintBlockDisplay(@NotNull BlueprintBlockInfo blockInfo) {
+  public BlueprintBlockDisplay(@NotNull BlueprintBlockInfo blockInfo, @NotNull BlockPos tableOffset) {
     super(blockInfo.state());
 
     this.blockInfo = blockInfo;
     this.useCustomTransformation = doesBlockEntityIgnoreRotation(blockInfo.state().getBlock());
+    this.tableOffset = tableOffset;
 
     setBrightness(new Brightness(15, 15));
     setShadowRadius(0);
@@ -96,7 +98,9 @@ public class BlueprintBlockDisplay extends BlockDisplayElement {
   }
 
   public BlockPos getBlockOffset() {
-    return blockInfo.pos().rotate(rotation);
+    return blockInfo.pos()
+        .add(tableOffset)
+        .rotate(rotation);
   }
 
   public BlockState getBlueprintBlockState() {
@@ -128,10 +132,9 @@ public class BlueprintBlockDisplay extends BlockDisplayElement {
    * @param block The block to check
    * @return True if the block is a block entity and the display is broken
    * @implNote The block classes affected are listed in
-   * {@link BlueprintBlockDisplay#BROKEN_BLOCK_DISPLAY_CLASSES}; if the block isn't a Polymer
-   * block and is an instance of one of the classes in the list, we treat it as broken. Though it's
-   * highly likely to vary by version, this is actually intended behavior, so it may not ever be
-   * "fixed".
+   * {@link BlueprintBlockDisplay#BROKEN_BLOCK_DISPLAY_CLASSES}; if the block isn't a Polymer block
+   * and is an instance of one of the classes in the list, we treat it as broken. Though it's highly
+   * likely to vary by version, this is actually intended behavior, so it may not ever be "fixed".
    * @see <a href="https://report.bugs.mojang.com/servicedesk/customer/portal/2/MC-259954">
    * MC-259954</a>
    * @see <a href="https://report.bugs.mojang.com/servicedesk/customer/portal/2/MC-259990">

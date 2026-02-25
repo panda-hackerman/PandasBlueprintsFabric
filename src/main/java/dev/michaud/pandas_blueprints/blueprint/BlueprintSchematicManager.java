@@ -1,8 +1,11 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -54,15 +57,19 @@ public class BlueprintSchematicManager extends PersistentState {
     this.schematicMap = schematicMap;
   }
 
-  public static BlueprintSchematicManager getState(ServerWorld world) {
-    return getState(world.getServer());
+  public static BlueprintSchematicManager getInstance(ServerWorld world) {
+    return getInstance(world.getServer());
   }
 
-  public static BlueprintSchematicManager getState(MinecraftServer server) {
+  public static BlueprintSchematicManager getInstance(MinecraftServer server) {
     final ServerWorld world = server.getWorld(ServerWorld.OVERWORLD);
     assert world != null;
 
     return world.getPersistentStateManager().getOrCreate(TYPE);
+  }
+
+  public static Path getFile(ServerWorld world) {
+    return world.getPersistentStateManager().getFile(TYPE.id());
   }
 
   /**
@@ -77,6 +84,10 @@ public class BlueprintSchematicManager extends PersistentState {
     }
 
     return Optional.empty();
+  }
+
+  public List<Identifier> getSchematicIds() {
+    return ImmutableList.sortedCopyOf(schematicMap.keySet());
   }
 
   /**

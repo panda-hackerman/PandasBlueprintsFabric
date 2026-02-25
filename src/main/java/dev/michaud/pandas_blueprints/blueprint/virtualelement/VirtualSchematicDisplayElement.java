@@ -38,7 +38,7 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
   private final Map<BlueprintBlockDisplay, BlueprintHighlight> blockHighlights;
 
   private BlockRotation rotation = BlockRotation.NONE;
-  private BlockBox cachedBoundingBox = null;
+//  private BlockBox cachedBoundingBox = null;
 
   public VirtualSchematicDisplayElement(@NotNull BlueprintSchematic schematic,
       @NotNull BlueprintTableBlockEntity blockEntity) {
@@ -82,7 +82,7 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
 
     final ImmutableSet.Builder<BlueprintBlockDisplay> builder = ImmutableSet.builder();
 
-    for (final BlueprintBlockInfo info : schematic.getAll()) {
+    for (final BlueprintBlockInfo info : schematic) {
 
       final BlockState state = info.state();
 
@@ -95,7 +95,7 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
         continue;
       }
 
-      final BlueprintBlockDisplay element = new BlueprintBlockDisplay(info);
+      final BlueprintBlockDisplay element = new BlueprintBlockDisplay(info, schematic.getOffset());
       element.setRotation(rotation);
 
       if (addElementWithoutUpdates(element)) {
@@ -145,14 +145,7 @@ public class VirtualSchematicDisplayElement extends ElementHolder {
     final BlockPos minPos = origin.add(RotationHelper.rotate(offset, rotation));
     final BlockPos maxPos = minPos.add(RotationHelper.rotate(size, rotation));
 
-    final BlockBox out = BlockBox.create(minPos, maxPos);
-
-    if (!out.equals(cachedBoundingBox)) {
-      cachedBoundingBox = out;
-      PandasBlueprints.LOGGER.info("Created bounding box! {}", out);
-    }
-
-    return out;
+    return BlockBox.create(minPos, maxPos);
   }
 
 }

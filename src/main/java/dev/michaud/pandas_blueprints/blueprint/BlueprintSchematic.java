@@ -2,26 +2,33 @@ package dev.michaud.pandas_blueprints.blueprint;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.mojang.serialization.DataResult;
+import dev.michaud.pandas_blueprints.PandasBlueprints;
+import dev.michaud.pandas_blueprints.blueprint.BlueprintSchematic.BlueprintBlockInfo;
 import dev.michaud.pandas_blueprints.tags.ModBlockTags;
 import dev.michaud.pandas_blueprints.util.BoxDetector;
-import java.util.HashMap;
+import dev.michaud.pandas_blueprints.util.CodecFormatUtil;
+import dev.michaud.pandas_blueprints.util.VarIntUtil;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMaps;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.InvalidNbtException;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.registry.RegistryEntryLookup;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.RegistryOps;
-import net.minecraft.util.collection.IdList;
+import net.minecraft.storage.NbtWriteView;
+import net.minecraft.util.ErrorReporter;
+import net.minecraft.util.ErrorReporter.Logging;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
@@ -33,26 +40,56 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A schematic that is saved from a blueprint
  */
-public class BlueprintSchematic {
+public class BlueprintSchematic implements Iterable<BlueprintBlockInfo> {
 
-  public static final int NBT_VERSION = 1;
-  public static final int MIN_SUPPORTED_VERSION = NBT_VERSION;
+  public static final int VERSION = 1;
+  public static final int MIN_SUPPORTED_VERSION = 1;
+  public static final int DATA_VERSION = SharedConstants.getGameVersion().dataVersion().id();
+  public static final int MIN_SUPPORTED_DATA_VERSION = 4438; //TODO: Verify
 
-  private final List<BlueprintBlockInfo> blockInfoList;
+  private final List<BlueprintBlockInfo> blockInfos;
+  private final Object2IntMap<Block> blockCounts;
   private final Vec3i size;
   private final BlockPos offset;
 
-  public static final Codec<BlueprintSchematic> CODEC = RecordCodecBuilder.create(
-      instance -> instance.group(
-          RegistryOps.getEntryLookupCodec(RegistryKeys.BLOCK),
-          NbtCompound.CODEC.fieldOf("data")
-              .forGetter(schematic -> schematic.writeNbt(new NbtCompound()))
-      ).apply(instance, BlueprintSchematic::readNbt));
+  public static final Codec<BlueprintSchematic> CODEC = NbtCompound.CODEC.comapFlatMap(
+      BlueprintSchematic::readNbtSafe, BlueprintSchematic::writeNbtSafe);
 
-  protected BlueprintSchematic(List<BlueprintBlockInfo> blockInfoList, Vec3i size, BlockPos offset) {
-    this.blockInfoList = blockInfoList;
+  protected BlueprintSchematic(List<BlueprintBlockInfo> blockInfos, Vec3i size, BlockPos offset) {
+    this.blockInfos = blockInfos;
     this.size = size;
     this.offset = offset;
+
+    blockCounts = buildBlockCounts(blockInfos);
+  }
+
+  private static Object2IntMap<Block> buildBlockCounts(List<BlueprintBlockInfo> blockInfos) {
+    final Object2IntMap<Block> blockCount = new Object2IntOpenHashMap<>();
+
+    for (BlueprintBlockInfo info : blockInfos) {
+      Block block = info.state().getBlock();
+      int count = blockCount.getInt(block);
+
+      blockCount.put(block, count + 1);
+    }
+
+    return Object2IntMaps.unmodifiable(blockCount);
+  }
+
+  public Vec3i getSize() {
+    return size;
+  }
+
+  public BlockPos getOffset() {
+    return offset;
+  }
+
+  public Set<Block> getAllBlocks() {
+    return blockCounts.keySet();
+  }
+
+  public int getCount(Block block) {
+    return blockCounts.getInt(block);
   }
 
   /**
@@ -84,10 +121,9 @@ public class BlueprintSchematic {
         continue;
       }
 
-      final BlockPos offsetPos = pos.subtract(tablePos).toImmutable();
+      final BlockPos offsetPos = pos.subtract(minCorner).toImmutable();
       final BlockEntity blockEntity = world.getBlockEntity(pos);
-      final BlueprintBlockInfo blockInfo = BlueprintBlockInfo.of(world, offsetPos, state,
-          blockEntity);
+      final BlueprintBlockInfo blockInfo = BlueprintBlockInfo.of(offsetPos, state, blockEntity);
 
       builder.add(blockInfo);
     }
@@ -98,63 +134,95 @@ public class BlueprintSchematic {
     return new BlueprintSchematic(builder.build(), size, offset);
   }
 
-  public List<BlueprintBlockInfo> getAll() {
-    return blockInfoList;
+  public static DataResult<BlueprintSchematic> readNbtSafe(@NotNull NbtCompound nbt) {
+    try {
+      return DataResult.success(readNbt(nbt));
+    } catch (IOException e) {
+      return DataResult.error(() -> "Ran into an I/O problem: " + e.getMessage());
+    } catch (InvalidNbtException | UnsupportedOperationException e) {
+      return DataResult.error(() -> "Got malformed or invalid NBT: " + e.getMessage());
+    }
   }
 
-  public Vec3i getSize() {
-    return size;
-  }
-
-  public BlockPos getOffset() {
-    return offset;
+  public NbtCompound writeNbtSafe() {
+    try {
+      return writeNbt(new NbtCompound(), false);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
    * Write this schematic to nbt
    *
-   * @param nbt The nbt to write to.
+   * @param nbt                 The nbt to write to.
+   * @param saveBlockEntityData If false, block entity data is omitted from the output.
    * @return The given {@code nbt} after writing this schematic as nbt to it
    */
-  @Contract("_ -> param1")
-  public NbtCompound writeNbt(@NotNull NbtCompound nbt) {
+  @Contract("_, _ -> param1")
+  public NbtCompound writeNbt(NbtCompound nbt, boolean saveBlockEntityData) throws IOException {
 
-    final Palette palette = new Palette(); /* Updated in blocks loop */
+    final int width = size.getX();
+    final int height = size.getY();
+    final int length = size.getZ();
 
-    // BUILD BLOCKS NBT
-    final NbtList blocks = new NbtList();
+    final NbtCompound blockData = new NbtCompound();
 
-    for (BlueprintBlockInfo blockInfo : blockInfoList) {
+    if (!blockInfos.isEmpty()) {
+      final BlockPalette blockPalette = new BlockPalette();
+      final NbtList blockEntities = new NbtList();
 
-      final NbtCompound block = new NbtCompound();
+      final List<List<Integer>> idToPositions = new ArrayList<>();
 
-      final int[] infoPos = new int[]{blockInfo.pos.getX(), blockInfo.pos.getY(), blockInfo.pos.getZ()};
-      final int infoStateId = palette.getIdOrCreate(blockInfo.state);
-      final @Nullable NbtCompound infoNbt = blockInfo.nbt;
+      for (BlueprintBlockInfo blockInfo : blockInfos) {
+        final int x = blockInfo.pos.getX();
+        final int y = blockInfo.pos.getY();
+        final int z = blockInfo.pos.getZ();
 
-      block.putIntArray("pos", infoPos);
-      block.putInt("state", infoStateId);
+        final int pos = (x) + (z * width) + (y * width * length);
+        final int id = blockPalette.getIdOrCreate(blockInfo.state);
 
-      if (infoNbt != null) {
-        block.put("nbt", infoNbt);
+        while (idToPositions.size() <= id) {
+          idToPositions.add(new ArrayList<>());
+        }
+
+        idToPositions.get(id).add(pos);
+
+        if (blockInfo.hasBlockEntityData() && saveBlockEntityData) {
+          NbtCompound blockEntity = new NbtCompound();
+          blockEntity.put("Data", blockInfo.nbt);
+          blockEntity.put("Pos", BlockPos.CODEC, blockInfo.pos);
+
+          blockEntities.add(blockEntity);
+        }
       }
 
-      blocks.add(block);
+      final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+      for (List<Integer> positions : idToPositions) {
+        VarIntUtil.writeVarInt(positions.size(), buffer);
+        VarIntUtil.writeVarInts(positions, buffer);
+      }
+
+      blockData.put("Palette", BlockPalette.CODEC, blockPalette);
+      blockData.putByteArray("Data", buffer.toByteArray());
+
+      if (!blockEntities.isEmpty()) {
+        blockData.put("BlockEntities", blockEntities);
+      }
     }
 
-    // SET PALETTE NBT
-    final NbtList paletteStates = new NbtList();
+    nbt.put("Blocks", blockData);
+    nbt.put("Width", CodecFormatUtil.UNSIGNED_SHORT, width);
+    nbt.put("Height", CodecFormatUtil.UNSIGNED_SHORT, height);
+    nbt.put("Length", CodecFormatUtil.UNSIGNED_SHORT, length);
 
-    for (BlockState state : palette) {
-      paletteStates.add(NbtHelper.fromBlockState(state));
+    if (!offset.equals(Vec3i.ZERO)) {
+      nbt.put("Offset", BlockPos.CODEC, offset);
     }
 
-    nbt.put("blocks", blocks);
-    nbt.put("palette", paletteStates);
-    nbt.put("size", Vec3i.CODEC, size);
-    nbt.put("offset", BlockPos.CODEC, offset);
-
-    nbt.putInt("DataVersion", NBT_VERSION);
+    nbt.putInt("Version", VERSION);
+    nbt.putInt("DataVersion", DATA_VERSION);
 
     return nbt;
   }
@@ -162,73 +230,105 @@ public class BlueprintSchematic {
   /**
    * Create a schematic from nbt
    *
-   * @param blockLookup Block lookup to use
-   * @param nbt         Nbt to read from
+   * @param nbt Nbt to read from
    * @return A new blueprint schematic
    * @throws InvalidNbtException           If the NBT is malformed or of an unsupported version.
    * @throws UnsupportedOperationException If the data version is higher than the current version.
    */
-  @Contract("_, _ -> new")
-  public static @NotNull BlueprintSchematic readNbt(RegistryEntryLookup<Block> blockLookup,
-      @NotNull NbtCompound nbt) {
+  public static BlueprintSchematic readNbt(@NotNull NbtCompound nbt) throws IOException {
 
-    // Check data version
-    final int version = nbt.getInt("DataVersion")
-        .orElseThrow(() -> new InvalidNbtException("Missing DataVersion tag"));
+    final int version = nbt.getInt("Version")
+        .orElseThrow(() -> new InvalidNbtException("Missing panda's blueprint version"));
 
-    if (version > NBT_VERSION) {
+    final int dataVersion = nbt.getInt("DataVersion")
+        .orElseThrow(() -> new InvalidNbtException("Missing data version"));
+
+    //region Check data version
+    if (version > VERSION) {
       throw new UnsupportedOperationException(
-          "Cannot read future version: " + version + " (I'm still on version "
-              + NBT_VERSION + "!)");
+          "Cannot read future Panda's Blueprints version: " + version + " (I'm still on version "
+              + VERSION + "!)");
+    }
+
+    if (dataVersion > DATA_VERSION) {
+      throw new UnsupportedOperationException(
+          "Cannot read future Minecraft data version: " + dataVersion + " (I'm still on version "
+              + DATA_VERSION + "!)");
     }
 
     if (version < MIN_SUPPORTED_VERSION) {
       throw new InvalidNbtException(
-          "Unsupported version: " + version + " (minimum supported is "
+          "Unsupported Panda's Blueprints version: " + version + " (minimum supported is "
               + MIN_SUPPORTED_VERSION + ")");
     }
 
-    // Generate palette
-    final Palette palette = new Palette();
-    final NbtList paletteStates = nbt.getList("palette")
-        .orElseThrow(() -> new InvalidNbtException("Can't find block palette"));
+    if (dataVersion < MIN_SUPPORTED_DATA_VERSION) {
+      throw new InvalidNbtException(
+          "Unsupported Minecraft data version: " + dataVersion + " (minimum supported is "
+              + MIN_SUPPORTED_DATA_VERSION + ")");
+    }
+    //endregion
 
-    for (int i = 0; i < paletteStates.size(); i++) {
-      NbtCompound compound = paletteStates.getCompound(i).orElseThrow();
-      palette.set(NbtHelper.toBlockState(blockLookup, compound), i);
+    final int width = nbt.get("Width", CodecFormatUtil.UNSIGNED_SHORT).orElse(0);
+    final int height = nbt.get("Height", CodecFormatUtil.UNSIGNED_SHORT).orElse(0);
+    final int length = nbt.get("Length", CodecFormatUtil.UNSIGNED_SHORT).orElse(0);
+
+    if (width <= 0 || height <= 0 || length <= 0) {
+      throw new InvalidNbtException(
+          String.format("Invalid blueprint size! Got %d/%d/%d", width, height, length));
     }
 
-    // Blocks
-    final NbtList blocks = nbt.getListOrEmpty("blocks");
+    final Vec3i size = new Vec3i(width, height, length);
+    final BlockPos offset = nbt.get("Offset", BlockPos.CODEC).orElse(BlockPos.ORIGIN);
 
-    final ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
+    final NbtCompound blockData = nbt.getCompoundOrEmpty("Blocks");
 
-    for (int i = 0; i < blocks.size(); i++) {
-
-      final NbtCompound nbtBlock = blocks.getCompound(i)
-          .orElseThrow(() -> new InvalidNbtException("Couldn't find block"));
-
-      final int[] posArr = nbtBlock.getIntArray("pos") // Position as an array [x, y, z]
-          .orElseThrow(() -> new InvalidNbtException("Missing block position"));
-
-      final int blockStateId = nbtBlock.getInt("state") // Block state id in the palette
-          .orElseThrow(() -> new InvalidNbtException("Invalid block state"));
-
-      final NbtCompound blockNbt = nbtBlock.getCompound("nbt") // If the block has nbt data
-          .orElse(null);
-
-      final BlockPos blockPos = new BlockPos(posArr[0], posArr[1], posArr[2]);
-      final BlockState state = palette.getState(blockStateId);
-
-      builder.add(new BlueprintBlockInfo(blockPos, state, blockNbt));
+    if (blockData.isEmpty()) {
+      PandasBlueprints.LOGGER.warn("Empty blueprint!");
+      return new BlueprintSchematic(ImmutableList.of(), size, offset);
     }
 
-    final Vec3i size = nbt.get("size", Vec3i.CODEC)
-        .orElseThrow(() -> new InvalidNbtException("Missing blueprint size"));
-    final BlockPos offset = nbt.get("offset", BlockPos.CODEC)
-        .orElse(BlockPos.ORIGIN);
+    // Get block stuff
+    final BlockPalette palette = blockData.get("Palette", BlockPalette.CODEC)
+        .orElseThrow(() -> new InvalidNbtException("No block palette!"));
+
+    final byte[] data = blockData.getByteArray("Data")
+        .orElseThrow(() -> new InvalidNbtException("Invalid block data!"));
+
+    final NbtList blockEntities = blockData.getListOrEmpty("BlockEntities");
+
+    final ByteArrayInputStream in = new ByteArrayInputStream(data);
+    ImmutableList.Builder<BlueprintBlockInfo> builder = ImmutableList.builder();
+
+    int id = 0;
+    while (in.available() > 0) {
+      int listSize = VarIntUtil.readVarInt(in);
+
+      for (int i = 0; i < listSize; i++) {
+        int packedPos = VarIntUtil.readVarInt(in);
+
+        int base = packedPos % (width * length);
+        final BlockPos pos = new BlockPos(
+            base % width,
+            packedPos / (width * length),
+            base / width
+        );
+
+        final BlockState state = palette.get(id);
+
+        //TODO: Block Entities
+        builder.add(new BlueprintBlockInfo(pos, state, null));
+      }
+
+      id++;
+    }
 
     return new BlueprintSchematic(builder.build(), size, offset);
+  }
+
+  @Override
+  public @NotNull Iterator<BlueprintBlockInfo> iterator() {
+    return blockInfos.iterator();
   }
 
   /**
@@ -241,52 +341,28 @@ public class BlueprintSchematic {
   public record BlueprintBlockInfo(@NotNull BlockPos pos, @NotNull BlockState state,
                                    @Nullable NbtCompound nbt) {
 
-    @Contract(value = "_, _, _, _ -> new", pure = true)
-    public static @NotNull BlueprintBlockInfo of(@NotNull World world, @NotNull BlockPos pos,
+    @Contract(value = "_, _, _ -> new", pure = true)
+    public static @NotNull BlueprintBlockInfo of(@NotNull BlockPos pos,
         @NotNull BlockState state, @Nullable BlockEntity entity) {
-
-      final DynamicRegistryManager registryManager = world.getRegistryManager();
-      final NbtCompound nbt = (entity == null) ? null
-          : entity.createNbtWithIdentifyingData(
-              registryManager); //TODO: Method to write without pos ?
-
-      return new BlueprintBlockInfo(pos, state, nbt);
+      return new BlueprintBlockInfo(pos, state, createBlockEntityData(entity));
     }
-  }
 
-  /**
-   * A "palette" of blocks states. Associates each state with a unique ID, to more efficiently
-   * serialize a large number of states.
-   */
-  static final class Palette implements Iterable<BlockState> {
+    public boolean hasBlockEntityData() {
+      return nbt != null && !nbt.isEmpty();
+    }
 
-    private final IdList<BlockState> ids = new IdList<>();
-    private int currentIndex = 0;
-
-    public int getIdOrCreate(BlockState state) {
-
-      int id = ids.getRawId(state);
-
-      if (id == -1) { // Doesn't exist yet
-        id = currentIndex++;
-        ids.set(state, id);
+    public static @Nullable NbtCompound createBlockEntityData(@Nullable BlockEntity entity) {
+      if (entity == null) {
+        return null;
       }
 
-      return id;
-    }
+      try (ErrorReporter.Logging logger = new Logging(entity.getReporterContext(),
+          PandasBlueprints.LOGGER)) {
+        final NbtWriteView writeView = NbtWriteView.create(logger);
+        entity.writeDataWithId(writeView);
 
-    public BlockState getState(int id) {
-      BlockState state = ids.get(id);
-      return state == null ? Blocks.AIR.getDefaultState() : state;
-    }
-
-    public void set(BlockState state, int id) {
-      ids.set(state, id);
-    }
-
-    @Override
-    public @NotNull Iterator<BlockState> iterator() {
-      return ids.iterator();
+        return writeView.getNbt();
+      }
     }
   }
 

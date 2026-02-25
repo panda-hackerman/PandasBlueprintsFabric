@@ -145,7 +145,7 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
     }
 
     final Identifier id = BlueprintIdComponent.getIdOrNull(getBlueprint());
-    final BlueprintSchematicManager manager = BlueprintSchematicManager.getState(serverWorld);
+    final BlueprintSchematicManager manager = BlueprintSchematicManager.getInstance(serverWorld);
 
     return manager.getSchematic(id);
   }
@@ -202,7 +202,7 @@ public class BlueprintTableBlockEntity extends BlockEntity implements
   public static @Nullable Identifier saveSchematic(@NotNull String name, @NotNull ServerWorld world,
       @NotNull BlockBox outline, @NotNull BlockPos tablePos) {
     final BlueprintSchematic schematic = BlueprintSchematic.create(world, outline, tablePos);
-    final BlueprintSchematicManager schematicManager = BlueprintSchematicManager.getState(world);
+    final BlueprintSchematicManager schematicManager = BlueprintSchematicManager.getInstance(world);
 
     return schematicManager.saveSchematic(schematic, name);
   }
