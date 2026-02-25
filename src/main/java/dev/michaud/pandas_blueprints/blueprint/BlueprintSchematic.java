@@ -1,7 +1,6 @@
 package dev.michaud.pandas_blueprints.blueprint;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import dev.michaud.pandas_blueprints.PandasBlueprints;
@@ -10,7 +9,6 @@ import dev.michaud.pandas_blueprints.tags.ModBlockTags;
 import dev.michaud.pandas_blueprints.util.BoxDetector;
 import dev.michaud.pandas_blueprints.util.CodecFormatUtil;
 import dev.michaud.pandas_blueprints.util.VarIntUtil;
-import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -20,7 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
