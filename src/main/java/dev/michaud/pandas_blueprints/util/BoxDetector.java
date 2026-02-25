@@ -53,8 +53,8 @@ public class BoxDetector {
     final BlockBox out = encompass(baseSquare.get(), topSquare.get());
 
     stopwatch.stop();
-    PandasBlueprints.LOGGER.info("Detected an outline in {}ms",
-        stopwatch.elapsed(TimeUnit.MILLISECONDS));
+//    PandasBlueprints.LOGGER.info("Detected an outline in {}ms",
+//        stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     return Optional.of(out);
   }
@@ -186,8 +186,8 @@ public class BoxDetector {
         .sorted(Comparator.comparingInt(BoxDetector::getArea).reversed())
         .toList();
 
-    PandasBlueprints.LOGGER.info("Found {} possible bounding boxes...",
-        possibleBoxes.size());
+//    PandasBlueprints.LOGGER.info("Found {} possible bounding boxes...",
+//        possibleBoxes.size());
 
     return possibleBoxes.stream()
         .filter(box -> hasValidPerimeter(box, validFrameBlockFunction))
